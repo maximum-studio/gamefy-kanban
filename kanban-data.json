@@ -2,7 +2,7 @@
   "cards": [
     {
       "id": "mrpctf5gjzk8",
-      "title": "Главный экран",
+      "title": "ÐÐ»Ð°Ð²Ð½ÑÐ¹ ÑÐºÑÐ°Ð½",
       "type": "design",
       "col": "todo",
       "desc": "",
@@ -13,7 +13,7 @@
           "done": true
         },
         {
-          "t": "Цветовая схема",
+          "t": "Ð¦Ð²ÐµÑÐ¾Ð²Ð°Ñ ÑÑÐµÐ¼Ð°",
           "done": false
         }
       ],
@@ -23,30 +23,8 @@
       "deadline": "2025-08-10"
     },
     {
-      "id": "mrpctf5gyvcw",
-      "title": "API авторизации",
-      "type": "dev",
-      "col": "doing",
-      "desc": "",
-      "link": "",
-      "subtasks": [
-        {
-          "t": "Модель User",
-          "done": true
-        },
-        {
-          "t": "Тесты",
-          "done": false
-        }
-      ],
-      "assignees": [
-        "mrpctf5g6qct"
-      ],
-      "deadline": "2025-07-20"
-    },
-    {
       "id": "mrpcvpen0zo3",
-      "title": "Новая Карточка",
+      "title": "ÐÐ¾Ð²Ð°Ñ ÐÐ°ÑÑÐ¾ÑÐºÐ°",
       "link": "",
       "type": "design",
       "col": "done",
@@ -54,7 +32,7 @@
       "deadline": "2026-12-17",
       "subtasks": [
         {
-          "t": "Подзадача",
+          "t": "ÐÐ¾Ð´Ð·Ð°Ð´Ð°ÑÐ°",
           "done": true
         }
       ],
@@ -66,14 +44,14 @@
   "members": [
     {
       "id": "mrpctf5g9yyy",
-      "name": "Анна К.",
+      "name": "ÐÐ½Ð½Ð° Ð.",
       "role": "UX/UI Designer",
       "tg": "https://t.me/anna",
       "avatar": ""
     },
     {
       "id": "mrpctf5g6qct",
-      "name": "Сергей М.",
+      "name": "Ð¡ÐµÑÐ³ÐµÐ¹ Ð.",
       "role": "Dev",
       "tg": "https://t.me/serg",
       "avatar": ""
