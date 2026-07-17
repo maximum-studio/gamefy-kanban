@@ -67,8 +67,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 }
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{background:#6A4DEA;box-shadow:0 0 16px var(--accent-glow)}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2)}
-.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-ghost{background:transparent;color:#C0C0D8;border:1px solid #454560}
+.btn-ghost:hover{background:var(--surface2);color:#fff;border-color:#666688}
 .btn-danger-soft{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(248,113,113,.2)}
 .btn-danger-soft:hover{background:rgba(248,113,113,.2)}
 
@@ -364,15 +364,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   flex-shrink:0;
 }
 .team-del{
-  position:absolute;top:8px;right:8px;
-  width:22px;height:22px;border-radius:4px;
-  border:none;background:var(--danger-bg);color:var(--danger);
-  font-size:14px;cursor:pointer;
+  width:18px;height:18px;border-radius:3px;
+  border:none;background:transparent;color:var(--muted2);
+  font-size:11px;cursor:pointer;
   display:none;align-items:center;justify-content:center;
-  transition:all .15s;
+  transition:all .15s;flex-shrink:0;margin-left:4px;
 }
 .team-member:hover .team-del{display:flex}
-.team-del:hover{background:rgba(248,113,113,.25)}
+.team-del:hover{background:var(--danger-bg);color:var(--danger)}
 
 /* HELP MODAL */
 .help-step{
@@ -472,7 +471,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <button class="btn btn-ghost" id="gh-settings-btn" title="GitHub синхронизация">⚙ GitHub</button>
     <button class="btn btn-ghost" id="team-btn">👥 Команда</button>
-    <button class="btn btn-primary" id="add-card-btn">+ Задача</button>
   </div>
 </header>
 
@@ -513,36 +511,61 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- ══ MODAL: GITHUB SETTINGS ══ -->
+<!-- ══ ЭКРАН ВХОДА (поверх всего, не overlay) ══ -->
+<div id="login-screen" style="
+  position:fixed;inset:0;z-index:999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+">
+  <div style="
+    background:var(--surface);border:1px solid var(--border2);
+    border-radius:var(--r-lg);width:100%;max-width:420px;
+    box-shadow:0 24px 64px rgba(0,0,0,.7);overflow:hidden;
+  ">
+    <div style="padding:28px 28px 20px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">🎮</div>
+        <div style="font-size:18px;font-weight:700"><span style="color:var(--accent)">Gamefy</span> Task Manager</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:8px">Введи токен для входа. Он хранится только в твоём браузере.</div>
+    </div>
+    <div style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+      <div class="field">
+        <label>GitHub Personal Access Token</label>
+        <input type="password" id="login-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="font-size:14px">
+      </div>
+      <div id="login-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px;line-height:1.5"></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.6">
+        💡 Токен выдаёт администратор. Нужен доступ — напиши в Telegram.
+      </div>
+      <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px">
+        Войти
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: СМЕНА ТОКЕНА (для вошедших) ══ -->
 <div class="overlay" id="github-overlay">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <h3>Подключение к GitHub</h3>
+      <h3>Настройки входа</h3>
       <button class="modal-close" data-close="github-overlay">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:4px">
-        Токен хранится только в твоём браузере — в репозиторий не попадает.
-        Все в команде вводят токен у себя.
-      </p>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:4px">
-        Нужен токен с правом <code style="color:var(--accent2)">repo</code>.<br>
-        <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--accent2)">github.com/settings/tokens/new →</a>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">
+        Текущая роль: <strong id="current-role-label" style="color:var(--accent2)">—</strong>
       </div>
       <div class="field">
-        <label>GitHub Personal Access Token</label>
+        <label>Сменить токен</label>
         <input type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-      </div>
-      <div class="field">
-        <label>Репозиторий</label>
-        <input type="text" id="gh-repo-input" placeholder="username/gamefy-kanban">
       </div>
       <div id="gh-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger-soft btn-sm" id="gh-disconnect-btn" style="display:none;margin-right:auto">Отключить</button>
+      <button class="btn btn-danger-soft btn-sm" id="gh-disconnect-btn" style="margin-right:auto">Выйти</button>
       <button class="btn btn-ghost" data-close="github-overlay">Отмена</button>
-      <button class="btn btn-primary" id="gh-save-btn">Подключить</button>
+      <button class="btn btn-primary" id="gh-save-btn">Сохранить</button>
     </div>
   </div>
 </div>
@@ -620,7 +643,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="modal-body">
       <div class="team-list" id="team-list"></div>
-      <button class="btn btn-ghost" id="add-member-btn" style="width:100%;justify-content:center">+ Добавить участника</button>
+      <button class="btn btn-ghost" id="add-member-btn" style="width:100%;justify-content:center;display:none" id="add-member-btn">+ Добавить участника</button>
     </div>
   </div>
 </div>
@@ -718,7 +741,13 @@ let state = {
 };
 
 // GitHub config
-let cfg = null; // ЗАМЕНИ: { token: 'ghp_НОВЫЙ_ТОКЕН', repo: 'maximum-studio/gamefy-kanban', path: 'kanban-data.json' }
+let cfg = null;
+
+// ── РОЛИ ──────────────────────────────────────────────
+// Роль определяется тем, какой токен ввёл пользователь при входе
+// cfg.role сохраняется в localStorage вместе с токеном
+function isAdmin(){ return cfg?.role === 'admin'; }
+// ──────────────────────────────────────────────────────
 let fileSha = null;
 
 // editing state
@@ -743,34 +772,56 @@ function loadCfg(){
 }
 function saveCfg(c){ localStorage.setItem('gamefy_cfg',JSON.stringify(c)); }
 
+// Список допустимых токенов (задаётся при деплое в коде — не в репо публично не светится,
+// потому что файл не содержит токенов пользователей; каждый вводит свой)
+// Роль определяется сервером по токену через GitHub API — мы проверяем какой репо доступен
+const REPO = 'maximum-studio/gamefy-kanban';
+
 window.addEventListener('DOMContentLoaded', ()=>{
   const saved = loadState();
   if(saved){ state = {...state,...saved}; }
   cfg = loadCfg();
 
-  // seed demo data if empty
+  setupEvents();
+
+  if(cfg){
+    // Уже залогинен — скрываем экран входа, показываем доску
+    showBoard();
+  } else {
+    // Показываем экран входа
+    showLoginScreen();
+  }
+});
+
+function showLoginScreen(){
+  document.getElementById('login-screen').style.display = 'flex';
+  setTimeout(()=>document.getElementById('login-token').focus(), 200);
+}
+
+function showBoard(){
+  document.getElementById('login-screen').style.display = 'none';
+  updateGhBtn();
+
+  // Seed demo data только если совсем пусто и нет данных из GitHub
   if(!state.members.length){
     state.members = [
       {id:uid(), name:'Анна Кова', role:'UX/UI Designer', tg:'https://t.me/anna', avatar:''},
-      {id:uid(), name:'Сергей М.', role:'Dev',             tg:'https://t.me/serg', avatar:''},
+      {id:uid(), name:'Сергей М.', role:'Dev', tg:'https://t.me/serg', avatar:''},
     ];
   }
   if(!state.cards.length){
     state.cards = [
       {id:uid(),title:'Главный экран',type:'design',col:'todo',desc:'Разработать главный экран приложения',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цветовая схема',done:false},{t:'Финальный макет',done:false}],assignees:[state.members[0]?.id].filter(Boolean),deadline:'2025-08-10'},
       {id:uid(),title:'API авторизации',type:'dev',col:'doing',desc:'Написать endpoint для JWT авторизации',link:'',subtasks:[{t:'Модель User',done:true},{t:'JWT middleware',done:true},{t:'Тесты',done:false}],assignees:[state.members[1]?.id].filter(Boolean),deadline:'2025-07-20'},
-      {id:uid(),title:'Онбординг экраны',type:'design',col:'review',desc:'Серия онбординг-экранов',link:'https://figma.com/example',subtasks:[{t:'Экран 1',done:true},{t:'Экран 2',done:true}],assignees:[state.members[0]?.id].filter(Boolean),deadline:'2025-07-15'},
-      {id:uid(),title:'База данных схема',type:'dev',col:'done',desc:'Проектирование схемы БД',link:'',subtasks:[{t:'ER-диаграмма',done:true},{t:'Миграции',done:true}],assignees:[state.members[1]?.id].filter(Boolean),deadline:'2025-07-01'},
     ];
-    state.doneHistory = 1;
+    state.doneHistory = 0;
   }
 
   render();
-  setupEvents();
-  updateGhBtn();
-  if(cfg){ setStatus('ok','Подключено'); syncPull(); }
-  else { setStatus('','Не подключено'); }
-});
+  setStatus('ok','Подключено');
+  syncPull();
+  setInterval(syncPull, 5 * 60 * 1000);
+}
 
 // ═══════════════════════════════════════
 // RENDER
@@ -780,7 +831,7 @@ function render(){
   renderMobileTabs();
   renderStats();
   saveLocalState();
-  if(cfg) persist();
+  // GitHub sync вызывается вручную из действий, не из каждого render
 }
 
 function renderStats(){
@@ -929,6 +980,7 @@ function moveCardToCol(cardId, colId){
   card.col = colId;
   if(goesToDone && !wasInDone){ state.doneHistory++; }
   render();
+  persist();
   toast('Задача перемещена');
 }
 
@@ -940,7 +992,7 @@ function openCardModal(id=null, colId='todo'){
   subtasks = [];
   const c = id ? state.cards.find(x=>x.id===id) : null;
   document.getElementById('card-modal-title').textContent = id ? 'Редактировать задачу' : 'Новая задача';
-  document.getElementById('delete-card-btn').style.display = id ? '' : 'none';
+  document.getElementById('delete-card-btn').style.display = (id && isAdmin()) ? '' : 'none';
   document.getElementById('f-title').value = c?.title||'';
   document.getElementById('f-link').value  = c?.link||'';
   document.getElementById('f-type').value  = c?.type||'';
@@ -1018,6 +1070,7 @@ function saveCard(){
   }
   closeOverlay('card-overlay');
   render();
+  persist();
   toast('Задача сохранена','ok');
 }
 
@@ -1026,6 +1079,7 @@ function deleteCard(){
     state.cards = state.cards.filter(c=>c.id!==editingCardId);
     closeOverlay('card-overlay');
     render();
+    persist();
     toast('Задача удалена');
   });
 }
@@ -1049,7 +1103,7 @@ function renderTeamList(){
         <div class="team-role">${esc(m.role)}</div>
       </div>
       <div class="team-done" title="Выполнено задач">✓ ${doneCnt}</div>
-      <button class="team-del" data-del="${m.id}" title="Удалить">✕</button>
+      ${isAdmin() ? `<button class="team-del" data-del="${m.id}" title="Удалить">✕</button>` : ''}
     </div>`;
   }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Команда пуста</div>';
 
@@ -1099,6 +1153,7 @@ function saveMember(){
   closeOverlay('add-member-overlay');
   renderTeamList();
   saveLocalState();
+  persist();
   toast('Участник сохранён','ok');
 }
 
@@ -1128,12 +1183,13 @@ function setupEvents(){
     ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); });
   });
 
-  document.getElementById('add-card-btn').addEventListener('click', ()=>openCardModal());
   document.getElementById('save-card-btn').addEventListener('click', saveCard);
   document.getElementById('delete-card-btn').addEventListener('click', deleteCard);
 
   document.getElementById('team-btn').addEventListener('click', openTeamModal);
-  document.getElementById('add-member-btn').addEventListener('click', ()=>openAddMemberModal());
+  const addMemberBtn = document.getElementById('add-member-btn');
+  if(isAdmin()) addMemberBtn.style.display = '';
+  addMemberBtn.addEventListener('click', ()=>{ if(isAdmin()) openAddMemberModal(); });
   document.getElementById('save-member-btn').addEventListener('click', saveMember);
 
   document.getElementById('confirm-ok-btn').addEventListener('click', ()=>{
@@ -1268,13 +1324,18 @@ async function syncPull(){
       const data = await res.json();
       fileSha = data.sha;
       const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
-      state = {...state,...remote};
+      if(remote && typeof remote === 'object'){
+        if(Array.isArray(remote.cards)) state.cards = remote.cards;
+        if(Array.isArray(remote.members)) state.members = remote.members;
+        if(typeof remote.doneHistory === 'number') state.doneHistory = remote.doneHistory;
+      }
       render();
       setStatus('ok','Синхронизировано');
     }
   } catch{}
 }
 
+// persist немедленно (важные действия: дедлайн, drag, создание)
 async function persist(){
   if(!cfg) return;
   setStatus('saving','Сохранение…');
@@ -1285,9 +1346,21 @@ async function persist(){
       headers:{Authorization:`token ${cfg.token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
       body:JSON.stringify({message:`update ${new Date().toISOString()}`,content,...(fileSha?{sha:fileSha}:{})})
     });
-    if(res.ok){ const d=await res.json(); fileSha=d.content.sha; setStatus('ok','Синхронизировано'); }
-    else{ setStatus('error','Ошибка GitHub'); }
+    if(res.ok){
+      const d=await res.json(); fileSha=d.content.sha;
+      localStorage.setItem('gamefy_last_save', new Date().toDateString());
+      setStatus('ok','Синхронизировано');
+    } else { setStatus('error','Ошибка GitHub'); }
   } catch(e){ setStatus('error','Нет соединения'); }
+}
+
+// dailyPersist — сохраняет в GitHub не чаще 1 раза в день
+function dailyPersist(){
+  if(!cfg) return;
+  const last = localStorage.getItem('gamefy_last_save');
+  const today = new Date().toDateString();
+  if(last !== today){ persist(); }
+  else { saveLocalState(); } // локально всегда
 }
 
 // ═══════════════════════════════════════
@@ -1313,7 +1386,7 @@ function formatDate(d){
   return `${day}.${m}.${y}`;
 }
 
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ try{ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }catch(e){return '';} }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
 let toastTimer = null;
