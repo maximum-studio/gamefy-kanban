@@ -732,10 +732,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 'use strict';
 
 // ═══════════════════════════════════════════════════════
-// CONFIG — единственное место где надо вписать репо
+// CONFIG — вставь свои ключи JSONBin после регистрации
 // ═══════════════════════════════════════════════════════
-const REPO = 'maximum-studio/gamefy-kanban';
-const DATA_PATH = 'kanban-data.json';
+const BIN_ID      = 'ВСТАВЬ_BIN_ID_СЮДА';       // ID бина (из URL после создания)
+const ADMIN_KEY   = 'ВСТАВЬ_MASTER_KEY_СЮДА';    // Master Key — только у тебя
+const VIEWER_KEY  = 'ВСТАВЬ_ACCESS_KEY_СЮДА';    // Access Key — даёшь команде
 
 const COLS = [
   {id:'todo',   label:'Tasks',  color:'#7C5CFC'},
@@ -748,15 +749,15 @@ const COLS = [
 // STATE
 // ═══════════════════════════════════════════════════════
 let state = { cards:[], members:[], doneHistory:0 };
-let cfg = null;       // {token, role}
-let fileSha = null;
+let cfg   = null;  // {key, role}
 let dragId = null;
 let editingCardId = null;
 let editingMemberId = null;
-let confirmCb = null;
+let confirmCb  = null;
 let activeMobileCol = 'todo';
-let subtasks = [];
-let syncTimer = null;
+let subtasks   = [];
+let syncTimer  = null;
+let isSaving   = false;
 
 // ═══════════════════════════════════════════════════════
 // STORAGE
@@ -771,7 +772,6 @@ function loadCfg(){
   try{ return JSON.parse(localStorage.getItem('gamefy_cfg')||'null'); }catch{ return null; }
 }
 function saveCfg(v){ try{ localStorage.setItem('gamefy_cfg', JSON.stringify(v)); }catch{} }
-
 function isAdmin(){ return cfg && cfg.role === 'admin'; }
 
 // ═══════════════════════════════════════════════════════
@@ -779,26 +779,28 @@ function isAdmin(){ return cfg && cfg.role === 'admin'; }
 // ═══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   try {
-    // Сброс старого кэша при обновлении версии
-    const APP_VERSION = '2.1';
+    const APP_VERSION = '3.0';
     if(localStorage.getItem('gamefy_version') !== APP_VERSION){
-      const savedCfg = localStorage.getItem('gamefy_cfg'); // токен сохраняем
+      const savedCfg = localStorage.getItem('gamefy_cfg');
       localStorage.clear();
       if(savedCfg) localStorage.setItem('gamefy_cfg', savedCfg);
       localStorage.setItem('gamefy_version', APP_VERSION);
     }
+
     const saved = loadLocal();
     if(saved && typeof saved === 'object'){
       if(Array.isArray(saved.cards))   state.cards   = saved.cards;
       if(Array.isArray(saved.members)) state.members = saved.members;
       if(typeof saved.doneHistory === 'number') state.doneHistory = saved.doneHistory;
     }
+
     cfg = loadCfg();
     setupEvents();
     if(cfg){ showBoard(); } else { showLoginScreen(); }
-  } catch(e) {
+
+  } catch(e){
     console.error('Boot error:', e);
-    document.body.innerHTML = '<div style="color:#F87171;padding:40px;font-family:monospace">Ошибка загрузки: ' + e.message + '</div>';
+    document.body.innerHTML = '<div style="color:#F87171;padding:40px;font-family:monospace;background:#0F0F13;min-height:100vh">Ошибка загрузки: ' + e.message + '</div>';
   }
 });
 
@@ -808,7 +810,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function showLoginScreen(){
   el('login-screen').style.display = 'flex';
   el('board-wrap').style.display   = 'none';
-  setTimeout(() => el('login-token').focus(), 100);
+  setTimeout(() => el('login-token') && el('login-token').focus(), 100);
 }
 
 function showBoard(){
@@ -818,26 +820,22 @@ function showBoard(){
 
   if(!state.members.length){
     state.members = [
-      {id:uid(), name:'Анна К.', role:'UX/UI Designer', tg:'https://t.me/anna', avatar:''},
-      {id:uid(), name:'Сергей М.', role:'Dev', tg:'https://t.me/serg', avatar:''},
+      {id:uid(), name:'Анна К.',   role:'UX/UI Designer', tg:'https://t.me/anna', avatar:''},
+      {id:uid(), name:'Сергей М.', role:'Dev',            tg:'https://t.me/serg', avatar:''},
     ];
   }
   if(!state.cards.length){
     state.cards = [
-      {id:uid(),title:'Главный экран',type:'design',col:'todo',desc:'',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цветовая схема',done:false}],assignees:[state.members[0].id],deadline:'2025-08-10'},
-      {id:uid(),title:'API авторизации',type:'dev',col:'doing',desc:'',link:'',subtasks:[{t:'Модель User',done:true},{t:'Тесты',done:false}],assignees:[state.members[1].id],deadline:'2025-07-20'},
+      {id:uid(),title:'Главный экран',   type:'design',col:'todo', desc:'',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цвета',done:false}],assignees:[state.members[0].id],deadline:'2025-08-10'},
+      {id:uid(),title:'API авторизации', type:'dev',   col:'doing',desc:'',link:'',subtasks:[{t:'Модель User',done:true},{t:'Тесты',done:false}],assignees:[state.members[1].id],deadline:'2025-07-20'},
     ];
   }
 
+  setStatus('saving','Загрузка…');
   render();
-
-  if(cfg){
-    setStatus('saving', 'Загрузка…');
-    syncPull();
-    if(!syncTimer) syncTimer = setInterval(syncPull, 5*60*1000);
-  } else {
-    setStatus('', 'Нет соединения');
-  }
+  syncPull().then(()=>{
+    if(!syncTimer) syncTimer = setInterval(syncPull, 30*1000); // каждые 30 сек
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -917,7 +915,7 @@ function cardHTML(c){
          <div class="card-assignee-role">${esc(member.role)}</div>
        </div>`
     : '<div style="font-size:11px;color:var(--muted2)">—</div>';
-  return `<div class="card" draggable="true" data-id="${c.id}">
+  return `<div class="card" draggable="true" data-id="${esc(c.id)}">
     <div class="card-top">
       <div class="card-title">${esc(c.title)}</div>${tag}
     </div>
@@ -934,7 +932,7 @@ function cardHTML(c){
 
 function renderMobileTabs(){
   COLS.forEach(col=>{
-    const b = document.getElementById('mtab-'+col.id);
+    const b = el('mtab-'+col.id);
     if(b) b.textContent = state.cards.filter(c=>c.col===col.id).length;
   });
 }
@@ -944,8 +942,8 @@ function renderMobileTabs(){
 // ═══════════════════════════════════════════════════════
 function onDragStart(e){
   dragId = e.currentTarget.dataset.id;
-  const el_ = e.currentTarget;
-  setTimeout(()=>{ if(el_.isConnected) el_.classList.add('dragging'); }, 0);
+  const t = e.currentTarget;
+  setTimeout(()=>{ if(t.isConnected) t.classList.add('dragging'); }, 0);
 }
 function onDragEnd(e){
   if(e.currentTarget.isConnected) e.currentTarget.classList.remove('dragging');
@@ -953,20 +951,19 @@ function onDragEnd(e){
 }
 function onDragOver(e){
   e.preventDefault();
-  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : e.currentTarget;
+  const col = e.currentTarget.closest('.column');
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
   if(col) col.classList.add('drag-over');
 }
 function onDragLeave(e){
-  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : e.currentTarget;
+  const col = e.currentTarget.closest('.column');
   if(col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
 }
 function onDrop(e){
   e.preventDefault();
-  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : e.currentTarget;
-  const colId = col ? col.dataset.col : null;
+  const col = e.currentTarget.closest('.column');
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
-  if(colId && dragId) moveCard(dragId, colId);
+  if(col && dragId) moveCard(dragId, col.dataset.col);
   dragId = null;
 }
 function moveCard(cardId, colId){
@@ -988,11 +985,11 @@ function openCardModal(id=null, colId='todo'){
   const c = id ? state.cards.find(x=>x.id===id) : null;
   el('card-modal-title').textContent = id ? 'Редактировать задачу' : 'Новая задача';
   el('delete-card-btn').style.display = (id && isAdmin()) ? '' : 'none';
-  el('f-title').value    = c ? c.title    : '';
-  el('f-link').value     = c ? c.link||'' : '';
-  el('f-type').value     = c ? c.type||'' : '';
-  el('f-col').value      = c ? c.col      : colId;
-  el('f-desc').value     = c ? c.desc||'' : '';
+  el('f-title').value    = c ? c.title     : '';
+  el('f-link').value     = c ? c.link||''  : '';
+  el('f-type').value     = c ? c.type||''  : '';
+  el('f-col').value      = c ? c.col       : colId;
+  el('f-desc').value     = c ? c.desc||''  : '';
   el('f-deadline').value = c ? c.deadline||'' : '';
   subtasks = c && c.subtasks ? JSON.parse(JSON.stringify(c.subtasks)) : [];
   renderSubtasks();
@@ -1009,21 +1006,21 @@ function renderSubtasks(){
       <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px" data-del="${i}">✕</button>
     </div>`).join('');
   el('subtasks-list').querySelectorAll('.subtask-check').forEach(cb=>{
-    cb.addEventListener('change', ()=>{ subtasks[+cb.dataset.i].done=cb.checked; renderSubtasks(); });
+    cb.addEventListener('change',()=>{ subtasks[+cb.dataset.i].done=cb.checked; renderSubtasks(); });
   });
   el('subtasks-list').querySelectorAll('[data-del]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{ subtasks.splice(+btn.dataset.del,1); renderSubtasks(); });
+    btn.addEventListener('click',()=>{ subtasks.splice(+btn.dataset.del,1); renderSubtasks(); });
   });
 }
 
 function renderAssigneePicker(selected=[]){
   el('assignee-picker').innerHTML = state.members.map(m=>`
-    <div class="ap-chip ${selected.includes(m.id)?'selected':''}" data-id="${m.id}">
-      <div class="ap-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:(m.name||'?')[0].toUpperCase()}</div>
+    <div class="ap-chip ${selected.includes(m.id)?'selected':''}" data-id="${esc(m.id)}">
+      <div class="ap-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:esc((m.name||'?')[0].toUpperCase())}</div>
       ${esc(m.name)}
     </div>`).join('');
   el('assignee-picker').querySelectorAll('.ap-chip').forEach(chip=>{
-    chip.addEventListener('click', ()=>chip.classList.toggle('selected'));
+    chip.addEventListener('click',()=>chip.classList.toggle('selected'));
   });
 }
 
@@ -1035,10 +1032,13 @@ function saveCard(){
   const title = el('f-title').value.trim();
   if(!title){ el('f-title').focus(); return; }
   const data = {
-    title, link:el('f-link').value.trim(), type:el('f-type').value,
-    col:el('f-col').value, desc:el('f-desc').value.trim(),
-    deadline:el('f-deadline').value,
-    subtasks:JSON.parse(JSON.stringify(subtasks)),
+    title,
+    link:     el('f-link').value.trim(),
+    type:     el('f-type').value,
+    col:      el('f-col').value,
+    desc:     el('f-desc').value.trim(),
+    deadline: el('f-deadline').value,
+    subtasks: JSON.parse(JSON.stringify(subtasks)),
     assignees:getSelectedAssignees(),
   };
   if(editingCardId){
@@ -1091,14 +1091,14 @@ function renderTeamList(){
         <div class="team-role">${esc(m.role)}</div>
       </div>
       <div class="team-done">✓ ${doneCnt}</div>
-      ${isAdmin()?`<button class="team-del" data-id="${m.id}">✕</button>`:''}
+      ${isAdmin()?`<button class="team-del" data-id="${esc(m.id)}">✕</button>`:''}
     </div>`;
   }).join('');
   list.querySelectorAll('.team-del').forEach(btn=>{
     btn.addEventListener('click', e=>{
       e.stopPropagation();
       const m = state.members.find(x=>x.id===btn.dataset.id);
-      showConfirm('Удалить участника?', `«${m?.name||''}» будет удалён.`, ()=>{
+      showConfirm('Удалить участника?',`«${m?.name||''}» будет удалён.`,()=>{
         state.members = state.members.filter(x=>x.id!==btn.dataset.id);
         state.cards.forEach(c=>{ c.assignees=(c.assignees||[]).filter(a=>a!==btn.dataset.id); });
         renderTeamList();
@@ -1121,10 +1121,7 @@ function openAddMemberModal(){
 function saveMember(){
   const name = el('m-name').value.trim();
   if(!name){ el('m-name').focus(); return; }
-  const data = {
-    name, tg:el('m-tg').value.trim(),
-    role:el('m-role').value, avatar:el('m-avatar').value.trim()
-  };
+  const data = { name, tg:el('m-tg').value.trim(), role:el('m-role').value, avatar:el('m-avatar').value.trim() };
   if(editingMemberId){
     const idx = state.members.findIndex(m=>m.id===editingMemberId);
     state.members[idx] = {...state.members[idx],...data};
@@ -1142,43 +1139,41 @@ function saveMember(){
 // LOGIN
 // ═══════════════════════════════════════════════════════
 async function doLogin(){
-  const token = el('login-token').value.trim();
+  const key   = el('login-token').value.trim();
   const errEl = el('login-error');
   const btn   = el('login-btn');
   errEl.style.display = 'none';
-  if(!token){ errEl.textContent='Введи токен'; errEl.style.display='block'; return; }
-  btn.textContent='Проверяем…'; btn.disabled=true;
-  try{
-    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`,{
-      headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
-    });
-    if(res.status===401) throw new Error('Токен неверный или не существует');
-    if(res.status===403) throw new Error('Нет доступа к репозиторию');
+  if(!key){ errEl.textContent='Введи ключ доступа'; errEl.style.display='block'; return; }
 
-    const role = await detectRole(token);
-    cfg = {token, role};
+  btn.textContent='Проверяем…'; btn.disabled=true;
+
+  try{
+    // Проверяем ключ — пробуем прочитать бин
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{
+      headers:{'X-Master-Key': key, 'X-Access-Key': key}
+    });
+
+    if(res.status===401 || res.status===403) throw new Error('Ключ неверный — проверь и попробуй ещё раз');
+    if(res.status===404) throw new Error('Бин не найден — проверь BIN_ID в коде');
+    if(!res.ok) throw new Error('Ошибка сервера: ' + res.status);
+
+    // Определяем роль: Master Key = admin, Access Key = viewer
+    const role = (key === ADMIN_KEY) ? 'admin' : 'viewer';
+    cfg = {key, role};
     saveCfg(cfg);
 
-    if(res.ok){
-      try{
-        const data = await res.json();
-        fileSha = data.sha;
-        const raw = atob(data.content.replace(/\n/g,''));
-        if(raw){
-          const remote = JSON.parse(raw);
-          if(remote && typeof remote==='object'){
-            if(Array.isArray(remote.cards))   state.cards   = remote.cards;
-            if(Array.isArray(remote.members)) state.members = remote.members;
-            if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
-          }
-        }
-      } catch(pe){ console.warn('Data parse warning:', pe); }
+    // Загружаем данные
+    const data = await res.json();
+    const remote = data.record;
+    if(remote && typeof remote === 'object'){
+      if(Array.isArray(remote.cards))          state.cards       = remote.cards;
+      if(Array.isArray(remote.members))        state.members     = remote.members;
+      if(typeof remote.doneHistory === 'number') state.doneHistory = remote.doneHistory;
     }
-    // 404 — файла нет, начинаем с чистой доски, это нормально
 
     showBoard();
-    setStatus('ok', isAdmin() ? 'Администратор 👑' : 'Участник 👋');
-    toast('Добро пожаловать! Роль: '+(role==='admin'?'Администратор 👑':'Участник 👋'),'ok');
+    toast('Добро пожаловать! ' + (role==='admin'?'Администратор 👑':'Участник команды 👋'), 'ok');
+
   } catch(e){
     errEl.textContent = e.message;
     errEl.style.display = 'block';
@@ -1187,29 +1182,58 @@ async function doLogin(){
   }
 }
 
-async function detectRole(token){
+// ═══════════════════════════════════════════════════════
+// JSONBIN SYNC
+// ═══════════════════════════════════════════════════════
+async function syncPull(){
+  if(!cfg) return;
   try{
-    const path = '.gamefy-role-check';
-    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{
-      method:'PUT',
-      headers:{Authorization:`token ${token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-      body:JSON.stringify({message:'role check',content:btoa('1')})
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{
+      headers:{'X-Master-Key': cfg.key, 'X-Access-Key': cfg.key}
     });
-    if(r.ok){
-      const d = await r.json();
-      fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{
-        method:'DELETE',
-        headers:{Authorization:`token ${token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-        body:JSON.stringify({message:'cleanup',sha:d.content.sha})
-      }).catch(()=>{});
-      return 'admin';
+    if(!res.ok) return;
+    const data = await res.json();
+    const remote = data.record;
+    if(remote && typeof remote === 'object'){
+      if(Array.isArray(remote.cards))          state.cards       = remote.cards;
+      if(Array.isArray(remote.members))        state.members     = remote.members;
+      if(typeof remote.doneHistory === 'number') state.doneHistory = remote.doneHistory;
     }
-  } catch{}
-  return 'viewer';
+    render();
+    setStatus('ok','Синхронизировано');
+  } catch(e){
+    setStatus('error','Нет соединения');
+  }
+}
+
+async function persist(){
+  if(!cfg) return;
+  if(isSaving){ return; } // не дублируем запросы
+  isSaving = true;
+  setStatus('saving','Сохранение…');
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{
+      method: 'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'X-Master-Key': ADMIN_KEY,  // запись всегда через master key
+      },
+      body: JSON.stringify(state)
+    });
+    if(res.ok){
+      setStatus('ok','Синхронизировано');
+    } else {
+      setStatus('error','Ошибка сохранения');
+    }
+  } catch(e){
+    setStatus('error','Нет соединения');
+  } finally{
+    isSaving = false;
+  }
 }
 
 // ═══════════════════════════════════════════════════════
-// GITHUB SETTINGS MODAL
+// SETTINGS MODAL (смена ключа / выход)
 // ═══════════════════════════════════════════════════════
 function openGithubModal(){
   el('gh-error').style.display = 'none';
@@ -1221,23 +1245,24 @@ function openGithubModal(){
 }
 
 async function saveGithubCfg(){
-  const token = el('gh-token-input').value.trim();
+  const key   = el('gh-token-input').value.trim();
   const errEl = el('gh-error');
   errEl.style.display = 'none';
-  if(!token){ errEl.textContent='Введи токен'; errEl.style.display='block'; return; }
+  if(!key){ errEl.textContent='Введи ключ'; errEl.style.display='block'; return; }
   const btn = el('gh-save-btn');
   btn.textContent='Проверяем…'; btn.disabled=true;
   try{
-    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`,{
-      headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{
+      headers:{'X-Master-Key':key,'X-Access-Key':key}
     });
-    if(res.status===401) throw new Error('Токен неверный или истёк');
-    const role = await detectRole(token);
-    cfg = {token, role};
+    if(res.status===401||res.status===403) throw new Error('Ключ неверный');
+    if(!res.ok) throw new Error('Ошибка: '+res.status);
+    const role = (key===ADMIN_KEY)?'admin':'viewer';
+    cfg = {key, role};
     saveCfg(cfg);
     closeOverlay('github-overlay');
     updateGhBtn();
-    toast('Токен обновлён','ok');
+    toast('Ключ обновлён, роль: '+(role==='admin'?'Администратор':'Участник'),'ok');
   } catch(e){
     errEl.textContent=e.message; errEl.style.display='block';
   } finally{ btn.textContent='Сохранить'; btn.disabled=false; }
@@ -1247,97 +1272,40 @@ function updateGhBtn(){
   const btn = el('gh-settings-btn');
   if(!btn) return;
   btn.textContent = cfg ? (isAdmin()?'👑 Админ':'👤 Участник') : '⚙ Войти';
-  btn.style.color = cfg ? (isAdmin()?'var(--warning)':'var(--dev)') : '';
-}
-
-// ═══════════════════════════════════════════════════════
-// GITHUB SYNC
-// ═══════════════════════════════════════════════════════
-async function syncPull(){
-  if(!cfg) return;
-  try{
-    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`,{
-      headers:{Authorization:`token ${cfg.token}`,Accept:'application/vnd.github.v3+json'}
-    });
-    if(!res.ok) return;
-    const data = await res.json();
-    if(data.sha === fileSha) return; // нет изменений
-    fileSha = data.sha;
-    const raw = atob(data.content.replace(/\n/g,''));
-    if(!raw) return;
-    const remote = JSON.parse(raw);
-    if(remote && typeof remote==='object'){
-      if(Array.isArray(remote.cards))   state.cards   = remote.cards;
-      if(Array.isArray(remote.members)) state.members = remote.members;
-      if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
-    }
-    render();
-    setStatus('ok','Обновлено');
-  } catch(e){ console.warn('syncPull:', e); }
-}
-
-async function persist(){
-  if(!cfg || !isAdmin()) return; // только admin пишет
-  setStatus('saving','Сохранение…');
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
-  try{
-    const body = {message:`update ${new Date().toISOString()}`, content};
-    if(fileSha) body.sha = fileSha;
-    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`,{
-      method:'PUT',
-      headers:{Authorization:`token ${cfg.token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-      body:JSON.stringify(body)
-    });
-    if(res.ok){
-      const d = await res.json();
-      fileSha = d.content.sha;
-      setStatus('ok','Синхронизировано');
-    } else {
-      if(res.status===409){ await syncPull(); await persist(); return; } // conflict
-      setStatus('error','Ошибка сохранения');
-    }
-  } catch(e){ setStatus('error','Нет соединения'); }
+  btn.style.color = isAdmin() ? 'var(--warning)' : 'var(--dev)';
 }
 
 // ═══════════════════════════════════════════════════════
 // EVENTS
 // ═══════════════════════════════════════════════════════
 function setupEvents(){
-  // close by data-close attr
   document.querySelectorAll('[data-close]').forEach(btn=>{
-    btn.addEventListener('click', ()=>closeOverlay(btn.dataset.close));
+    btn.addEventListener('click',()=>closeOverlay(btn.dataset.close));
   });
-  // close overlay by bg click
   document.querySelectorAll('.overlay').forEach(ov=>{
-    ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); });
+    ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('open'); });
   });
-  // ESC
-  document.addEventListener('keydown', e=>{
+  document.addEventListener('keydown',e=>{
     if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));
   });
 
-  // login
   el('login-btn').addEventListener('click', doLogin);
-  el('login-token').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  el('login-token').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 
-  // header
   el('team-btn').addEventListener('click', openTeamModal);
   el('gh-settings-btn').addEventListener('click', openGithubModal);
 
-  // card modal
   el('save-card-btn').addEventListener('click', saveCard);
   el('delete-card-btn').addEventListener('click', deleteCard);
   el('subtask-add-btn').addEventListener('click', addSubtask);
-  el('subtask-input').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addSubtask(); } });
+  el('subtask-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addSubtask(); } });
 
-  // team modal
   el('add-member-btn').addEventListener('click', openAddMemberModal);
   el('save-member-btn').addEventListener('click', saveMember);
 
-  // github modal
   el('gh-save-btn').addEventListener('click', saveGithubCfg);
-  el('gh-disconnect-btn').addEventListener('click', ()=>{
-    cfg=null; fileSha=null;
+  el('gh-disconnect-btn').addEventListener('click',()=>{
+    cfg=null;
     localStorage.removeItem('gamefy_cfg');
     if(syncTimer){ clearInterval(syncTimer); syncTimer=null; }
     closeOverlay('github-overlay');
@@ -1345,17 +1313,14 @@ function setupEvents(){
     toast('Вы вышли');
   });
 
-  // confirm
-  el('confirm-ok-btn').addEventListener('click', ()=>{
+  el('confirm-ok-btn').addEventListener('click',()=>{
     closeOverlay('confirm-overlay');
     if(confirmCb){ confirmCb(); confirmCb=null; }
   });
 
-  // help
-  el('help-fab').addEventListener('click', ()=>openOverlay('help-overlay'));
+  el('help-fab').addEventListener('click',()=>openOverlay('help-overlay'));
 
-  // mobile tabs
-  el('mobile-tabs').addEventListener('click', e=>{
+  el('mobile-tabs').addEventListener('click',e=>{
     const tab = e.target.closest('.mobile-tab');
     if(!tab) return;
     activeMobileCol = tab.dataset.col;
@@ -1369,7 +1334,7 @@ function addSubtask(){
   const inp = el('subtask-input');
   const v = inp.value.trim();
   if(!v) return;
-  subtasks.push({t:v, done:false});
+  subtasks.push({t:v,done:false});
   inp.value='';
   renderSubtasks();
   inp.focus();
@@ -1381,16 +1346,18 @@ function addSubtask(){
 function openOverlay(id){ el(id).classList.add('open'); }
 function closeOverlay(id){ el(id).classList.remove('open'); }
 
-function showConfirm(title, text, cb){
-  el('confirm-title').textContent = title;
-  el('confirm-text').textContent  = text;
-  confirmCb = cb;
+function showConfirm(title,text,cb){
+  el('confirm-title').textContent=title;
+  el('confirm-text').textContent=text;
+  confirmCb=cb;
   openOverlay('confirm-overlay');
 }
 
-function setStatus(s, text){
-  el('sync-dot').className = 'sync-dot '+s;
-  el('sync-text').textContent = text;
+function setStatus(s,text){
+  const dot = el('sync-dot');
+  const txt = el('sync-text');
+  if(dot) dot.className='sync-dot '+s;
+  if(txt) txt.textContent=text;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1402,19 +1369,18 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function fmtDate(d){ if(!d) return ''; const [y,m,day]=d.split('-'); return `${day}.${m}.${y}`; }
 function deadlineCls(dl){
   if(!dl) return '';
-  const diff = (new Date(dl)-new Date())/(1000*60*60*24);
+  const diff=(new Date(dl)-new Date())/(1000*60*60*24);
   if(diff<0) return 'overdue';
   if(diff<3) return 'soon';
   return '';
 }
-
-let toastT = null;
-function toast(msg, type=''){
-  const t = el('toast');
-  t.textContent = msg;
-  t.className = 'toast show'+(type?' '+type:'');
+let toastT=null;
+function toast(msg,type=''){
+  const t=el('toast');
+  t.textContent=msg;
+  t.className='toast show'+(type?' '+type:'');
   clearTimeout(toastT);
-  toastT = setTimeout(()=>t.className='toast', 2500);
+  toastT=setTimeout(()=>t.className='toast',2500);
 }
 </script>
 </body>
