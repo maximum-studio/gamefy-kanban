@@ -124,6 +124,19 @@
       "assignees": [
         "mrom0rkdnz08"
       ]
+    },
+    {
+      "id": "mrozw425s4uc",
+      "title": "Карточка на русском языке",
+      "link": "",
+      "type": "design",
+      "col": "done",
+      "desc": "На русском языке",
+      "deadline": "2222-12-12",
+      "subtasks": [],
+      "assignees": [
+        "mrom0rkdnz08"
+      ]
     }
   ],
   "members": [
