@@ -1,28 +1,6 @@
 {
   "cards": [
     {
-      "id": "mrpctf5gjzk8",
-      "title": "ÐÐ»Ð°Ð²Ð½ÑÐ¹ ÑÐºÑÐ°Ð½",
-      "type": "design",
-      "col": "todo",
-      "desc": "",
-      "link": "",
-      "subtasks": [
-        {
-          "t": "Wireframe",
-          "done": true
-        },
-        {
-          "t": "Ð¦Ð²ÐµÑÐ¾Ð²Ð°Ñ ÑÑÐµÐ¼Ð°",
-          "done": false
-        }
-      ],
-      "assignees": [
-        "mrpctf5g9yyy"
-      ],
-      "deadline": "2025-08-10"
-    },
-    {
       "id": "mrpcvpen0zo3",
       "title": "ÐÐ¾Ð²Ð°Ñ ÐÐ°ÑÑÐ¾ÑÐºÐ°",
       "link": "",
