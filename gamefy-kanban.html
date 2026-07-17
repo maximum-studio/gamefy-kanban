@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>✅</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gamefy Task Manager</title>
+<title>Kanban | Gamefy Task Manager</title>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
@@ -464,7 +465,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="logo-slot" id="logo-slot" title="Логотип (замените SVG)">
       <span>SVG</span>
     </div>
-    <div class="header-title"><span>Gamefy</span> Task Manager</div>
+    <div class="header-title"><span>Kanban</span> Gamefy Task Manager</div>
   </div>
   <div class="header-right">
     <div class="sync-status" id="sync-status">
@@ -719,11 +720,7 @@ let state = {
 };
 
 // GitHub config
-let cfg = {
-  token: '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',
-  repo:  'maximum-studio/gamefy-kanban',
-  path:  'kanban-data.json'
-};
+let cfg = null; // ЗАМЕНИ: { token: 'ghp_НОВЫЙ_ТОКЕН', repo: 'maximum-studio/gamefy-kanban', path: 'kanban-data.json' }
 let fileSha = null;
 
 // editing state
