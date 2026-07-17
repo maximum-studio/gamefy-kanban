@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gamefy Task Manager</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0F0F13;
+  --surface:#17171E;
+  --surface2:#1E1E28;
+  --border:#2A2A38;
+  --border2:#333345;
+  --text:#F0F0F8;
+  --muted:#6B6B88;
+  --muted2:#4A4A62;
+  --accent:#7C5CFC;
+  --accent2:#9F82FF;
+  --accent-glow:rgba(124,92,252,0.18);
+  --design:#F472B6;
+  --design-bg:rgba(244,114,182,0.12);
+  --dev:#34D399;
+  --dev-bg:rgba(52,211,153,0.12);
+  --danger:#F87171;
+  --danger-bg:rgba(248,113,113,0.12);
+  --warning:#FBBF24;
+  --r:10px;
+  --r-sm:6px;
+  --r-lg:14px;
+}
+
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+
+/* ── HEADER ── */
+.header{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  gap:16px;
+}
+.header-left{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.logo-slot{
+  width:38px;height:38px;
+  border:2px dashed var(--border2);
+  border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted2);font-size:10px;text-align:center;line-height:1.2;
+  cursor:pointer;transition:border-color .2s;
+  flex-shrink:0;
+}
+.logo-slot:hover{border-color:var(--accent)}
+.header-title{font-size:15px;font-weight:700;letter-spacing:-0.3px;white-space:nowrap}
+.header-title span{color:var(--accent)}
+
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn{
+  font-family:inherit;font-size:13px;font-weight:500;
+  padding:8px 16px;border-radius:var(--r-sm);border:none;
+  cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#6A4DEA;box-shadow:0 0 16px var(--accent-glow)}
+.btn-ghost{background:transparent;color:#C0C0D8;border:1px solid #454560}
+.btn-ghost:hover{background:var(--surface2);color:#fff;border-color:#666688}
+.btn-danger-soft{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(248,113,113,.2)}
+.btn-danger-soft:hover{background:rgba(248,113,113,.2)}
+
+/* ── STATS BAR ── */
+.stats-bar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:12px 24px;
+  display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+}
+.stats-label{font-size:12px;color:var(--muted);font-weight:500}
+.stats-done{display:flex;align-items:center;gap:8px}
+.stats-done-num{font-size:20px;font-weight:700;color:var(--dev);line-height:1}
+.stats-done-label{font-size:11px;color:var(--muted);line-height:1.3}
+.progress-section{flex:1;min-width:200px}
+.progress-label{font-size:11px;color:var(--muted);margin-bottom:6px}
+.progress-track{
+  display:flex;gap:4px;height:8px;
+}
+.progress-seg{
+  flex:1;border-radius:4px;
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  transition:background .4s;
+  position:relative;overflow:hidden;
+}
+.progress-seg.filled{background:var(--accent);border-color:var(--accent)}
+.progress-seg.filled::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(255,255,255,.15),transparent);
+}
+
+/* ── MOBILE TABS ── */
+.mobile-tabs{
+  display:none;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:0 16px;
+  gap:0;overflow-x:auto;
+  scrollbar-width:none;
+}
+.mobile-tabs::-webkit-scrollbar{display:none}
+.mobile-tab{
+  font-family:inherit;font-size:13px;font-weight:500;
+  padding:12px 16px;
+  border:none;background:transparent;color:var(--muted);
+  cursor:pointer;white-space:nowrap;flex-shrink:0;
+  border-bottom:2px solid transparent;transition:all .15s;
+  display:flex;align-items:center;gap:6px;
+}
+.mobile-tab.active{color:var(--text);border-bottom-color:var(--accent)}
+.mobile-tab-badge{
+  font-size:10px;font-weight:600;
+  background:var(--surface2);color:var(--muted);
+  border-radius:10px;padding:1px 6px;
+}
+.mobile-tab.active .mobile-tab-badge{background:var(--accent-glow);color:var(--accent2)}
+
+/* ── BOARD ── */
+.board-wrap{flex:1;padding:16px 24px 24px;overflow-x:auto}
+.board{display:flex;gap:14px;align-items:flex-start;min-height:400px}
+
+/* ── COLUMN ── */
+.column{
+  min-width:280px;width:280px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  display:flex;flex-direction:column;
+  max-height:calc(100vh - 200px);
+  transition:border-color .2s;
+}
+.column.drag-over{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow)}
+
+.col-header{
+  padding:14px 14px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;gap:8px;
+}
+.col-left{display:flex;align-items:center;gap:8px}
+.col-indicator{width:3px;height:20px;border-radius:2px;flex-shrink:0}
+.col-name{font-size:13px;font-weight:600;letter-spacing:-.2px}
+.col-count{
+  font-size:11px;font-weight:600;
+  background:var(--surface2);color:var(--muted);
+  border:1px solid var(--border2);
+  border-radius:10px;padding:1px 7px;
+}
+.col-add{
+  width:26px;height:26px;border-radius:var(--r-sm);
+  border:1px dashed var(--border2);background:transparent;
+  color:var(--muted);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
+}
+.col-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+
+.cards-list{
+  padding:10px;
+  display:flex;flex-direction:column;gap:8px;
+  overflow-y:auto;flex:1;
+}
+.cards-list::-webkit-scrollbar{width:3px}
+.cards-list::-webkit-scrollbar-track{background:transparent}
+.cards-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.col-empty{
+  padding:28px 16px;text-align:center;
+  color:var(--muted2);font-size:12px;line-height:1.6;
+}
+
+/* ── CARD ── */
+.card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:12px 13px;
+  cursor:grab;
+  transition:all .15s;
+  user-select:none;
+  position:relative;
+}
+.card:hover{border-color:var(--border2);box-shadow:0 4px 16px rgba(0,0,0,.3);transform:translateY(-1px)}
+.card:active{cursor:grabbing}
+.card.dragging{opacity:.4;transform:scale(.97)}
+.card.drag-placeholder{
+  height:80px;background:var(--accent-glow);
+  border:2px dashed var(--accent);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--accent2);font-size:12px;
+}
+
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.card-title{font-size:13px;font-weight:600;line-height:1.4;flex:1}
+.card-tag{
+  font-size:10px;font-weight:600;padding:2px 8px;
+  border-radius:20px;white-space:nowrap;flex-shrink:0;
+}
+.tag-design{background:var(--design-bg);color:var(--design)}
+.tag-dev{background:var(--dev-bg);color:var(--dev)}
+
+.card-progress{margin-bottom:8px}
+.card-progress-label{font-size:10px;color:var(--muted);margin-bottom:4px}
+.card-progress-bar{height:4px;background:var(--surface);border-radius:2px;overflow:hidden}
+.card-progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+
+.card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.card-assignee-info{display:flex;flex-direction:column;gap:1px}
+.card-assignee-name{font-size:11px;font-weight:500;color:var(--accent2);text-decoration:none}
+.card-assignee-name:hover{text-decoration:underline}
+.card-assignee-role{font-size:10px;color:var(--muted)}
+.card-deadline{font-size:11px;color:var(--muted);font-weight:500}
+.card-deadline.overdue{color:var(--danger)}
+.card-deadline.soon{color:var(--warning)}
+
+/* ── MODALS ── */
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.6);
+  backdrop-filter:blur(4px);
+  z-index:200;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.overlay.open{opacity:1;pointer-events:all}
+
+.modal{
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:var(--r-lg);
+  width:100%;max-width:520px;
+  max-height:90vh;
+  display:flex;flex-direction:column;
+  box-shadow:0 24px 64px rgba(0,0,0,.6);
+  transform:translateY(10px) scale(.98);
+  transition:transform .2s;
+  overflow:hidden;
+}
+.overlay.open .modal{transform:translateY(0) scale(1)}
+.modal.modal-sm{max-width:400px}
+.modal.modal-lg{max-width:600px}
+
+.modal-header{
+  padding:18px 20px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.modal-header h3{font-size:16px;font-weight:700}
+.modal-close{
+  width:28px;height:28px;border-radius:var(--r-sm);
+  border:1px solid var(--border2);background:transparent;color:var(--muted);
+  font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.modal-close:hover{background:var(--surface2);color:var(--text)}
+
+.modal-body{padding:18px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+.modal-footer{
+  padding:14px 20px;border-top:1px solid var(--border);
+  display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;
+}
+
+/* FORM FIELDS */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:500;color:var(--muted)}
+.field input,.field textarea,.field select{
+  font-family:inherit;font-size:13px;color:var(--text);
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r-sm);padding:9px 12px;
+  transition:border-color .15s;
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  outline:none;border-color:var(--accent);background:var(--bg);
+}
+.field textarea{resize:vertical;min-height:80px;line-height:1.5}
+.field select{cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236B6B88' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;appearance:none;
+}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* SUBTASKS */
+.subtasks-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.subtask-item{display:flex;align-items:center;gap:8px}
+.subtask-check{
+  width:16px;height:16px;border-radius:4px;
+  border:1.5px solid var(--border2);background:var(--surface2);
+  cursor:pointer;flex-shrink:0;appearance:none;
+  transition:all .15s;position:relative;
+}
+.subtask-check:checked{background:var(--accent);border-color:var(--accent)}
+.subtask-check:checked::after{
+  content:'✓';position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:#fff;
+}
+.subtask-text{font-size:13px;flex:1}
+.subtask-text.done-text{text-decoration:line-through;color:var(--muted)}
+.add-subtask-row{display:flex;gap:8px;margin-top:4px}
+.add-subtask-input{
+  flex:1;font-family:inherit;font-size:12px;color:var(--text);
+  background:var(--surface2);border:1px dashed var(--border2);
+  border-radius:var(--r-sm);padding:6px 10px;
+}
+.add-subtask-input:focus{outline:none;border-color:var(--accent);border-style:solid}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* ASSIGNEE PICKER */
+.assignee-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.ap-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:20px;
+  border:1.5px solid var(--border2);background:var(--surface2);
+  cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);
+  transition:all .15s;user-select:none;
+}
+.ap-chip.selected{border-color:var(--accent);background:var(--accent-glow);color:var(--accent2)}
+.ap-avatar{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;
+}
+.ap-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* TEAM MODAL */
+.team-list{display:flex;flex-direction:column;gap:10px}
+.team-member{
+  display:flex;align-items:center;gap:12px;
+  padding:12px;border-radius:var(--r);
+  background:var(--surface2);border:1px solid var(--border);
+  position:relative;transition:border-color .15s;
+}
+.team-member:hover{border-color:var(--border2)}
+.team-avatar{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;overflow:hidden;border:2px solid var(--border2);
+}
+.team-avatar img{width:100%;height:100%;object-fit:cover}
+.team-info{flex:1;min-width:0}
+.team-name{font-size:14px;font-weight:600;color:var(--accent2);text-decoration:none;display:block}
+.team-name:hover{text-decoration:underline}
+.team-role{font-size:12px;color:var(--muted);margin-top:1px}
+.team-done{
+  font-size:11px;font-weight:600;
+  background:var(--dev-bg);color:var(--dev);
+  border-radius:10px;padding:2px 8px;
+  flex-shrink:0;
+}
+.team-del{
+  width:18px;height:18px;border-radius:3px;
+  border:none;background:transparent;color:var(--muted2);
+  font-size:11px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;margin-left:4px;
+}
+.team-member:hover .team-del{display:flex}
+.team-del:hover{background:var(--danger-bg);color:var(--danger)}
+
+/* HELP MODAL */
+.help-step{
+  display:flex;gap:12px;padding:12px;
+  background:var(--surface2);border-radius:var(--r);border:1px solid var(--border);
+}
+.help-step-num{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--accent-glow);color:var(--accent2);
+  font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.help-step-text{font-size:13px;line-height:1.5;color:var(--muted)}
+.help-step-text strong{color:var(--text)}
+
+/* HELP FAB */
+.help-fab{
+  position:fixed;bottom:24px;right:24px;
+  width:40px;height:40px;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--muted);font-size:18px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;z-index:50;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+}
+.help-fab:hover{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow)}
+
+/* SYNC STATUS */
+.sync-status{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:var(--muted);padding:4px 10px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;
+}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.sync-dot.ok{background:var(--dev)}
+.sync-dot.saving{background:var(--warning);animation:blink 1s infinite}
+.sync-dot.error{background:var(--danger)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:72px;right:24px;
+  background:var(--surface2);color:var(--text);
+  border:1px solid var(--border2);
+  font-size:13px;padding:10px 16px;
+  border-radius:var(--r-sm);
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  z-index:500;transform:translateY(8px);opacity:0;
+  transition:all .25s;pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(52,211,153,.3);color:var(--dev)}
+.toast.err{border-color:rgba(248,113,113,.3);color:var(--danger)}
+
+/* CONFIRM MODAL */
+.confirm-text{font-size:14px;color:var(--muted);line-height:1.6;text-align:center;padding:8px 0}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .header{padding:0 14px;height:54px}
+  .header-title{font-size:13px}
+  .stats-bar{padding:10px 14px;gap:14px}
+  .board-wrap{padding:10px 0 80px;overflow-x:visible}
+  .board{flex-direction:column;gap:0;min-height:unset}
+  .mobile-tabs{display:flex}
+  .column{
+    min-width:unset;width:100%;border-radius:0;
+    border-left:none;border-right:none;border-top:none;
+    max-height:unset;
+    display:none;
+  }
+  .column.mobile-active{display:flex}
+  .col-header{padding:10px 14px 8px}
+  .cards-list{padding:8px 14px 14px;overflow-y:visible}
+  .help-fab{bottom:16px;right:14px}
+  .modal{margin:0;border-radius:var(--r-lg) var(--r-lg) 0 0;max-height:95vh}
+  .overlay{align-items:flex-end;padding:0}
+  .row-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-slot" id="logo-slot" title="Логотип (замените SVG)">
+      <span>SVG</span>
+    </div>
+    <div class="header-title"><span>Gamefy</span> Task Manager</div>
+  </div>
+  <div class="header-right">
+    <div class="sync-status" id="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-text">—</span>
+    </div>
+    <button class="btn btn-ghost" id="gh-settings-btn" title="GitHub синхронизация">⚙ GitHub</button>
+    <button class="btn btn-ghost" id="team-btn">👥 Команда</button>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stats-done">
+    <div class="stats-done-num" id="done-count">0</div>
+    <div class="stats-done-label">За всё время<br>выполнено задач</div>
+  </div>
+  <div class="progress-section">
+    <div class="progress-label" id="progress-label">1 часть</div>
+    <div class="progress-track" id="progress-track">
+      <div class="progress-seg" data-i="0"></div>
+      <div class="progress-seg" data-i="1"></div>
+      <div class="progress-seg" data-i="2"></div>
+      <div class="progress-seg" data-i="3"></div>
+      <div class="progress-seg" data-i="4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE TABS -->
+<div class="mobile-tabs" id="mobile-tabs">
+  <button class="mobile-tab active" data-col="todo">Tasks <span class="mobile-tab-badge" id="mtab-todo">0</span></button>
+  <button class="mobile-tab" data-col="doing">Doing <span class="mobile-tab-badge" id="mtab-doing">0</span></button>
+  <button class="mobile-tab" data-col="review">Review <span class="mobile-tab-badge" id="mtab-review">0</span></button>
+  <button class="mobile-tab" data-col="done">Done <span class="mobile-tab-badge" id="mtab-done">0</span></button>
+</div>
+
+<!-- BOARD -->
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+
+<!-- HELP FAB -->
+<button class="help-fab" id="help-fab" title="Помощь">?</button>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ ЭКРАН ВХОДА (поверх всего, не overlay) ══ -->
+<div id="login-screen" style="
+  position:fixed;inset:0;z-index:999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+">
+  <div style="
+    background:var(--surface);border:1px solid var(--border2);
+    border-radius:var(--r-lg);width:100%;max-width:420px;
+    box-shadow:0 24px 64px rgba(0,0,0,.7);overflow:hidden;
+  ">
+    <div style="padding:28px 28px 20px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">🎮</div>
+        <div style="font-size:18px;font-weight:700"><span style="color:var(--accent)">Gamefy</span> Task Manager</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:8px">Введи токен для входа. Он хранится только в твоём браузере.</div>
+    </div>
+    <div style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
+      <div class="field">
+        <label>GitHub Personal Access Token</label>
+        <input type="password" id="login-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="font-size:14px">
+      </div>
+      <div id="login-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px;line-height:1.5"></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.6">
+        💡 Токен выдаёт администратор. Нужен доступ — напиши в Telegram.
+      </div>
+      <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px">
+        Войти
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: СМЕНА ТОКЕНА (для вошедших) ══ -->
+<div class="overlay" id="github-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Настройки входа</h3>
+      <button class="modal-close" data-close="github-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">
+        Текущая роль: <strong id="current-role-label" style="color:var(--accent2)">—</strong>
+      </div>
+      <div class="field">
+        <label>Сменить токен</label>
+        <input type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+      </div>
+      <div id="gh-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger-soft btn-sm" id="gh-disconnect-btn" style="margin-right:auto">Выйти</button>
+      <button class="btn btn-ghost" data-close="github-overlay">Отмена</button>
+      <button class="btn btn-primary" id="gh-save-btn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADD/EDIT CARD ══ -->
+<div class="overlay" id="card-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="card-modal-title">Новая задача</h3>
+      <button class="modal-close" data-close="card-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Заголовок</label>
+        <input type="text" id="f-title" placeholder="Название задачи">
+      </div>
+      <div class="field">
+        <label>Ссылка на макет</label>
+        <input type="url" id="f-link" placeholder="https://figma.com/...  (необязательно)">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Тип задачи</label>
+          <select id="f-type">
+            <option value="">— не выбрано —</option>
+            <option value="design">Дизайн</option>
+            <option value="dev">Разработка</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Колонка</label>
+          <select id="f-col">
+            <option value="todo">Tasks</option>
+            <option value="doing">Doing</option>
+            <option value="review">Review</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Описание</label>
+        <textarea id="f-desc" placeholder="Детали, контекст, ссылки…"></textarea>
+      </div>
+      <div class="field">
+        <label>Подзадачи</label>
+        <div class="subtasks-list" id="subtasks-list"></div>
+        <div class="add-subtask-row">
+          <input type="text" class="add-subtask-input" id="subtask-input" placeholder="Добавить подзадачу…">
+          <button class="btn btn-ghost btn-sm" id="subtask-add-btn">+ Добавить</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Исполнители</label>
+        <div class="assignee-picker" id="assignee-picker"></div>
+      </div>
+      <div class="field">
+        <label>Дедлайн</label>
+        <input type="date" id="f-deadline">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger-soft" id="delete-card-btn" style="display:none;margin-right:auto">🗑 Удалить</button>
+      <button class="btn btn-ghost" data-close="card-overlay">Отмена</button>
+      <button class="btn btn-primary" id="save-card-btn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: TEAM ══ -->
+<div class="overlay" id="team-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Команда</h3>
+      <button class="modal-close" data-close="team-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="team-list" id="team-list"></div>
+      <button class="btn btn-ghost" id="add-member-btn" style="width:100%;justify-content:center;display:none" id="add-member-btn">+ Добавить участника</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADD MEMBER ══ -->
+<div class="overlay" id="add-member-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="add-member-title">Новый участник</h3>
+      <button class="modal-close" data-close="add-member-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Имя</label><input type="text" id="m-name" placeholder="Иван Петров"></div>
+      <div class="field"><label>Ссылка на Telegram</label><input type="url" id="m-tg" placeholder="https://t.me/username"></div>
+      <div class="field">
+        <label>Роль</label>
+        <select id="m-role">
+          <option value="UX/UI Designer">UX/UI Designer</option>
+          <option value="Dev">Dev</option>
+        </select>
+      </div>
+      <div class="field"><label>Аватарка (URL)</label><input type="url" id="m-avatar" placeholder="https://...  (необязательно)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="add-member-overlay">Отмена</button>
+      <button class="btn btn-primary" id="save-member-btn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: CONFIRM ══ -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="confirm-title">Подтверждение</h3>
+      <button class="modal-close" data-close="confirm-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="confirm-text" id="confirm-text"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="confirm-overlay">Отмена</button>
+      <button class="btn btn-danger-soft" id="confirm-ok-btn">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: HELP ══ -->
+<div class="overlay" id="help-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Как работать с доской</h3>
+      <button class="modal-close" data-close="help-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-text"><strong>Tasks</strong> — новые задачи. Нажмите <strong>+ Задача</strong> или «+» в колонке, чтобы создать.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-text"><strong>Doing</strong> — задача взята в работу. Перетащите карточку или откройте и смените колонку.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-text"><strong>Review</strong> — задача готова, ждёт проверки командой или заказчиком.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">4</div>
+        <div class="help-step-text"><strong>Done</strong> — задача принята. Счётчик «выполнено» обновится автоматически.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">✦</div>
+        <div class="help-step-text">Карточки можно <strong>перетаскивать</strong> между колонками. Красный дедлайн — срок прошёл.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+const COLS = [
+  {id:'todo',   label:'Tasks',  color:'#7C5CFC'},
+  {id:'doing',  label:'Doing',  color:'#FBBF24'},
+  {id:'review', label:'Review', color:'#F472B6'},
+  {id:'done',   label:'Done',   color:'#34D399'},
+];
+
+let state = {
+  cards: [],
+  members: [],
+  doneHistory: 0,   // total ever moved to done
+};
+
+// GitHub config
+let cfg = null;
+
+// ── РОЛИ ──────────────────────────────────────────────
+// Роль определяется тем, какой токен ввёл пользователь при входе
+// cfg.role сохраняется в localStorage вместе с токеном
+function isAdmin(){ return cfg?.role === 'admin'; }
+// ──────────────────────────────────────────────────────
+let fileSha = null;
+
+// editing state
+let editingCardId = null;
+let editingMemberId = null;
+let confirmCallback = null;
+let activeMobileCol = 'todo';
+let dragId = null;
+let subtasks = []; // temp while modal open
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem('gamefy_state')||'null'); }catch{return null;}
+}
+function saveLocalState(){
+  localStorage.setItem('gamefy_state', JSON.stringify(state));
+}
+function loadCfg(){
+  try{ return JSON.parse(localStorage.getItem('gamefy_cfg')||'null'); }catch{return null;}
+}
+function saveCfg(c){ localStorage.setItem('gamefy_cfg',JSON.stringify(c)); }
+
+// Список допустимых токенов (задаётся при деплое в коде — не в репо публично не светится,
+// потому что файл не содержит токенов пользователей; каждый вводит свой)
+// Роль определяется сервером по токену через GitHub API — мы проверяем какой репо доступен
+const REPO = 'maximum-studio/gamefy-kanban';
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  const saved = loadState();
+  if(saved){ state = {...state,...saved}; }
+  cfg = loadCfg();
+
+  setupEvents();
+
+  if(cfg){
+    // Уже залогинен — скрываем экран входа, показываем доску
+    showBoard();
+  } else {
+    // Показываем экран входа
+    showLoginScreen();
+  }
+});
+
+function showLoginScreen(){
+  document.getElementById('login-screen').style.display = 'flex';
+  setTimeout(()=>document.getElementById('login-token').focus(), 200);
+}
+
+function showBoard(){
+  document.getElementById('login-screen').style.display = 'none';
+  updateGhBtn();
+
+  // Seed demo data только если совсем пусто и нет данных из GitHub
+  if(!state.members.length){
+    state.members = [
+      {id:uid(), name:'Анна Кова', role:'UX/UI Designer', tg:'https://t.me/anna', avatar:''},
+      {id:uid(), name:'Сергей М.', role:'Dev', tg:'https://t.me/serg', avatar:''},
+    ];
+  }
+  if(!state.cards.length){
+    state.cards = [
+      {id:uid(),title:'Главный экран',type:'design',col:'todo',desc:'Разработать главный экран приложения',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цветовая схема',done:false},{t:'Финальный макет',done:false}],assignees:[state.members[0]?.id].filter(Boolean),deadline:'2025-08-10'},
+      {id:uid(),title:'API авторизации',type:'dev',col:'doing',desc:'Написать endpoint для JWT авторизации',link:'',subtasks:[{t:'Модель User',done:true},{t:'JWT middleware',done:true},{t:'Тесты',done:false}],assignees:[state.members[1]?.id].filter(Boolean),deadline:'2025-07-20'},
+    ];
+    state.doneHistory = 0;
+  }
+
+  render();
+  setStatus('ok','Подключено');
+  syncPull();
+  setInterval(syncPull, 5 * 60 * 1000);
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function render(){
+  renderBoard();
+  renderMobileTabs();
+  renderStats();
+  saveLocalState();
+  // GitHub sync вызывается вручную из действий, не из каждого render
+}
+
+function renderStats(){
+  document.getElementById('done-count').textContent = state.doneHistory;
+  const doneCnt = state.cards.filter(c=>c.col==='done').length;
+  const total = state.cards.length;
+  const ratio = total ? doneCnt/total : 0;
+  const segs = document.querySelectorAll('.progress-seg');
+  segs.forEach((seg,i)=>{
+    const threshold = (i+1)/segs.length;
+    seg.classList.toggle('filled', ratio >= threshold - 0.001);
+  });
+}
+
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  COLS.forEach(col=>{
+    const colCards = state.cards.filter(c=>c.col===col.id);
+    const el = document.createElement('div');
+    el.className = 'column' + (col.id===activeMobileCol?' mobile-active':'');
+    el.dataset.col = col.id;
+    el.innerHTML = `
+      <div class="col-header">
+        <div class="col-left">
+          <div class="col-indicator" style="background:${col.color}"></div>
+          <span class="col-name">${col.label}</span>
+          <span class="col-count">${colCards.length}</span>
+        </div>
+        <button class="col-add" data-col="${col.id}" title="Добавить задачу">+</button>
+      </div>
+      <div class="cards-list" id="cards-${col.id}">
+        ${colCards.length===0?'<div class="col-empty">Нет задач</div>':''}
+        ${colCards.map(c=>cardHTML(c)).join('')}
+      </div>
+    `;
+    board.appendChild(el);
+  });
+
+  // events
+  board.querySelectorAll('.col-add').forEach(btn=>{
+    btn.addEventListener('click', ()=>openCardModal(null, btn.dataset.col));
+  });
+  board.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click', ()=>openCardModal(card.dataset.id));
+    card.addEventListener('dragstart', onDragStart);
+    card.addEventListener('dragend', onDragEnd);
+  });
+  board.querySelectorAll('.cards-list').forEach(list=>{
+    list.addEventListener('dragover', onDragOver);
+    list.addEventListener('dragleave', onDragLeave);
+    list.addEventListener('drop', onDrop);
+  });
+  board.querySelectorAll('.column').forEach(col=>{
+    col.addEventListener('dragover', e=>{ e.preventDefault(); });
+    col.addEventListener('drop', e=>{
+      e.preventDefault();
+      const colId = col.dataset.col;
+      moveCardToCol(dragId, colId);
+    });
+  });
+}
+
+function cardHTML(c){
+  const member = c.assignees?.length ? state.members.find(m=>m.id===c.assignees[0]) : null;
+  const done = c.subtasks?.filter(s=>s.done).length||0;
+  const total = c.subtasks?.length||0;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const tagHTML = c.type==='design'
+    ? '<span class="card-tag tag-design">Design</span>'
+    : c.type==='dev'
+    ? '<span class="card-tag tag-dev">Dev</span>'
+    : '';
+  const dlClass = deadlineClass(c.deadline);
+  const dlLabel = c.deadline ? formatDate(c.deadline) : '';
+  const assigneeHTML = member
+    ? `<div class="card-assignee-info">
+         <a class="card-assignee-name" href="${esc(member.tg)}" target="_blank">${esc(member.name)}</a>
+         <div class="card-assignee-role">${esc(member.role)}</div>
+       </div>`
+    : '<div style="font-size:11px;color:var(--muted2)">Нет исполнителя</div>';
+  return `
+    <div class="card" draggable="true" data-id="${c.id}">
+      <div class="card-top">
+        <div class="card-title">${esc(c.title)}</div>
+        ${tagHTML}
+      </div>
+      ${total>0?`
+      <div class="card-progress">
+        <div class="card-progress-label">${done}/${total} подзадач</div>
+        <div class="card-progress-bar"><div class="card-progress-fill" style="width:${pct}%"></div></div>
+      </div>`:''}
+      <div class="card-bottom">
+        ${assigneeHTML}
+        ${dlLabel?`<div class="card-deadline ${dlClass}">${dlLabel}</div>`:''}
+      </div>
+    </div>
+  `;
+}
+
+function renderMobileTabs(){
+  COLS.forEach(col=>{
+    const cnt = state.cards.filter(c=>c.col===col.id).length;
+    const badge = document.getElementById('mtab-'+col.id);
+    if(badge) badge.textContent = cnt;
+  });
+}
+
+// ═══════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════
+function onDragStart(e){
+  dragId = e.currentTarget.dataset.id;
+  const el = e.currentTarget;
+  setTimeout(()=>{ if(el && el.isConnected) el.classList.add('dragging'); }, 0);
+}
+function onDragEnd(e){
+  if(e.currentTarget && e.currentTarget.isConnected)
+    e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
+}
+function onDragOver(e){
+  e.preventDefault();
+  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : null;
+  document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
+  if(col) col.classList.add('drag-over');
+}
+function onDragLeave(e){
+  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : null;
+  if(col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+}
+function onDrop(e){
+  e.preventDefault();
+  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : e.currentTarget;
+  const colId = col ? col.dataset.col : null;
+  document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
+  if(colId && dragId) moveCardToCol(dragId, colId);
+  dragId = null;
+}
+
+function moveCardToCol(cardId, colId){
+  const card = state.cards.find(c=>c.id===cardId);
+  if(!card) return;
+  const wasInDone = card.col==='done';
+  const goesToDone = colId==='done';
+  card.col = colId;
+  if(goesToDone && !wasInDone){ state.doneHistory++; }
+  render();
+  persist();
+  toast('Задача перемещена');
+}
+
+// ═══════════════════════════════════════
+// CARD MODAL
+// ═══════════════════════════════════════
+function openCardModal(id=null, colId='todo'){
+  editingCardId = id;
+  subtasks = [];
+  const c = id ? state.cards.find(x=>x.id===id) : null;
+  document.getElementById('card-modal-title').textContent = id ? 'Редактировать задачу' : 'Новая задача';
+  document.getElementById('delete-card-btn').style.display = (id && isAdmin()) ? '' : 'none';
+  document.getElementById('f-title').value = c?.title||'';
+  document.getElementById('f-link').value  = c?.link||'';
+  document.getElementById('f-type').value  = c?.type||'';
+  document.getElementById('f-col').value   = c?.col||colId;
+  document.getElementById('f-desc').value  = c?.desc||'';
+  document.getElementById('f-deadline').value = c?.deadline||'';
+  subtasks = c?.subtasks ? JSON.parse(JSON.stringify(c.subtasks)) : [];
+  renderSubtasks();
+  renderAssigneePicker(c?.assignees||[]);
+  openOverlay('card-overlay');
+  setTimeout(()=>document.getElementById('f-title').focus(),150);
+}
+
+function renderSubtasks(){
+  const list = document.getElementById('subtasks-list');
+  list.innerHTML = subtasks.map((s,i)=>`
+    <div class="subtask-item">
+      <input type="checkbox" class="subtask-check" data-i="${i}" ${s.done?'checked':''}>
+      <span class="subtask-text${s.done?' done-text':''}">${esc(s.t)}</span>
+      <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px" data-del="${i}">✕</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('.subtask-check').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      subtasks[+cb.dataset.i].done = cb.checked;
+      renderSubtasks();
+    });
+  });
+  list.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ subtasks.splice(+btn.dataset.del,1); renderSubtasks(); });
+  });
+}
+
+function renderAssigneePicker(selected=[]){
+  const picker = document.getElementById('assignee-picker');
+  picker.innerHTML = state.members.map(m=>{
+    const isSel = selected.includes(m.id);
+    return `<div class="ap-chip ${isSel?'selected':''}" data-id="${m.id}">
+      <div class="ap-avatar">${m.avatar?`<img src="${esc(m.avatar)}">`:`${m.name[0]||'?'}`}</div>
+      ${esc(m.name)}
+    </div>`;
+  }).join('');
+  picker.querySelectorAll('.ap-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      chip.classList.toggle('selected');
+    });
+  });
+}
+
+function getSelectedAssignees(){
+  return [...document.querySelectorAll('#assignee-picker .ap-chip.selected')].map(c=>c.dataset.id);
+}
+
+function saveCard(){
+  const title = document.getElementById('f-title').value.trim();
+  if(!title){ document.getElementById('f-title').focus(); return; }
+  const data = {
+    title,
+    link: document.getElementById('f-link').value.trim(),
+    type: document.getElementById('f-type').value,
+    col:  document.getElementById('f-col').value,
+    desc: document.getElementById('f-desc').value.trim(),
+    deadline: document.getElementById('f-deadline').value,
+    subtasks: JSON.parse(JSON.stringify(subtasks)),
+    assignees: getSelectedAssignees(),
+  };
+
+  if(editingCardId){
+    const idx = state.cards.findIndex(c=>c.id===editingCardId);
+    const old = state.cards[idx];
+    if(data.col==='done' && old.col!=='done') state.doneHistory++;
+    state.cards[idx] = {...old,...data};
+  } else {
+    state.cards.push({id:uid(),...data});
+  }
+  closeOverlay('card-overlay');
+  render();
+  persist();
+  toast('Задача сохранена','ok');
+}
+
+function deleteCard(){
+  confirm('Удалить задачу?', '«'+( state.cards.find(c=>c.id===editingCardId)?.title||'')+'» будет удалена. Действие нельзя отменить.', ()=>{
+    state.cards = state.cards.filter(c=>c.id!==editingCardId);
+    closeOverlay('card-overlay');
+    render();
+    persist();
+    toast('Задача удалена');
+  });
+}
+
+// ═══════════════════════════════════════
+// TEAM MODAL
+// ═══════════════════════════════════════
+function openTeamModal(){
+  renderTeamList();
+  openOverlay('team-overlay');
+}
+
+function renderTeamList(){
+  const list = document.getElementById('team-list');
+  list.innerHTML = state.members.map(m=>{
+    const doneCnt = state.cards.filter(c=>c.col==='done'&&c.assignees?.includes(m.id)).length;
+    return `<div class="team-member" data-id="${m.id}">
+      <div class="team-avatar">${m.avatar?`<img src="${esc(m.avatar)}">`:`${m.name[0]||'?'}`}</div>
+      <div class="team-info">
+        <a class="team-name" href="${esc(m.tg)}" target="_blank">${esc(m.name)}</a>
+        <div class="team-role">${esc(m.role)}</div>
+      </div>
+      <div class="team-done" title="Выполнено задач">✓ ${doneCnt}</div>
+      ${isAdmin() ? `<button class="team-del" data-del="${m.id}" title="Удалить">✕</button>` : ''}
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Команда пуста</div>';
+
+  list.querySelectorAll('.team-del').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const id = btn.dataset.del;
+      const m = state.members.find(x=>x.id===id);
+      confirm('Удалить участника?', `«${m?.name||''}» будет удалён из команды.`, ()=>{
+        state.members = state.members.filter(x=>x.id!==id);
+        state.cards.forEach(c=>{ c.assignees = c.assignees?.filter(a=>a!==id)||[]; });
+        renderTeamList();
+        saveLocalState();
+        toast('Участник удалён');
+      });
+    });
+  });
+}
+
+function openAddMemberModal(memberId=null){
+  editingMemberId = memberId;
+  const m = memberId ? state.members.find(x=>x.id===memberId) : null;
+  document.getElementById('add-member-title').textContent = memberId ? 'Редактировать' : 'Новый участник';
+  document.getElementById('m-name').value   = m?.name||'';
+  document.getElementById('m-tg').value     = m?.tg||'';
+  document.getElementById('m-role').value   = m?.role||'UX/UI Designer';
+  document.getElementById('m-avatar').value = m?.avatar||'';
+  openOverlay('add-member-overlay');
+  setTimeout(()=>document.getElementById('m-name').focus(),150);
+}
+
+function saveMember(){
+  const name = document.getElementById('m-name').value.trim();
+  if(!name){ document.getElementById('m-name').focus(); return; }
+  const data = {
+    name,
+    tg:     document.getElementById('m-tg').value.trim(),
+    role:   document.getElementById('m-role').value,
+    avatar: document.getElementById('m-avatar').value.trim(),
+  };
+  if(editingMemberId){
+    const idx = state.members.findIndex(m=>m.id===editingMemberId);
+    state.members[idx] = {...state.members[idx],...data};
+  } else {
+    state.members.push({id:uid(),...data});
+  }
+  closeOverlay('add-member-overlay');
+  renderTeamList();
+  saveLocalState();
+  persist();
+  toast('Участник сохранён','ok');
+}
+
+// ═══════════════════════════════════════
+// OVERLAY HELPERS
+// ═══════════════════════════════════════
+function openOverlay(id){ document.getElementById(id).classList.add('open'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
+
+function confirm(title, text, cb){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent  = text;
+  confirmCallback = cb;
+  openOverlay('confirm-overlay');
+}
+
+// ═══════════════════════════════════════
+// SETUP EVENTS
+// ═══════════════════════════════════════
+function setupEvents(){
+  // close buttons
+  document.querySelectorAll('[data-close]').forEach(btn=>{
+    btn.addEventListener('click', ()=>closeOverlay(btn.dataset.close));
+  });
+  // overlay background click
+  document.querySelectorAll('.overlay').forEach(ov=>{
+    ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); });
+  });
+
+  document.getElementById('save-card-btn').addEventListener('click', saveCard);
+  document.getElementById('delete-card-btn').addEventListener('click', deleteCard);
+
+  document.getElementById('team-btn').addEventListener('click', openTeamModal);
+  const addMemberBtn = document.getElementById('add-member-btn');
+  if(isAdmin()) addMemberBtn.style.display = '';
+  addMemberBtn.addEventListener('click', ()=>{ if(isAdmin()) openAddMemberModal(); });
+  document.getElementById('save-member-btn').addEventListener('click', saveMember);
+
+  document.getElementById('confirm-ok-btn').addEventListener('click', ()=>{
+    closeOverlay('confirm-overlay');
+    confirmCallback?.();
+    confirmCallback = null;
+  });
+
+  document.getElementById('help-fab').addEventListener('click', ()=>openOverlay('help-overlay'));
+
+  // Login screen
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-token').addEventListener('keydown', e=>{
+    if(e.key==='Enter') doLogin();
+  });
+
+  // GitHub settings (смена токена / выход)
+  document.getElementById('gh-settings-btn').addEventListener('click', openGithubModal);
+  document.getElementById('gh-save-btn').addEventListener('click', saveGithubCfg);
+  document.getElementById('gh-disconnect-btn').addEventListener('click', ()=>{
+    cfg = null; fileSha = null;
+    localStorage.removeItem('gamefy_cfg');
+    closeOverlay('github-overlay');
+    showLoginScreen();
+    toast('Вы вышли');
+  });
+
+  // subtask add
+  document.getElementById('subtask-add-btn').addEventListener('click', addSubtask);
+  document.getElementById('subtask-input').addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); addSubtask(); }
+  });
+
+  // mobile tabs
+  document.getElementById('mobile-tabs').addEventListener('click', e=>{
+    const tab = e.target.closest('.mobile-tab');
+    if(!tab) return;
+    activeMobileCol = tab.dataset.col;
+    document.querySelectorAll('.mobile-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    renderBoard();
+  });
+
+  // keyboard esc
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){
+      document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));
+    }
+  });
+}
+
+function addSubtask(){
+  const inp = document.getElementById('subtask-input');
+  const val = inp.value.trim();
+  if(!val) return;
+  subtasks.push({t:val, done:false});
+  inp.value = '';
+  renderSubtasks();
+  inp.focus();
+}
+
+// ═══════════════════════════════════════
+// ВХОД
+// ═══════════════════════════════════════
+async function doLogin(){
+  const token = document.getElementById('login-token').value.trim();
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  if(!token){ errEl.textContent='Введи токен'; errEl.style.display='block'; return; }
+  btn.textContent='Проверяем…'; btn.disabled=true;
+  try{
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/kanban-data.json`,{
+      headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
+    });
+    if(res.status===401) throw new Error('Токен неверный или не существует');
+    if(res.status===403) throw new Error('Нет доступа к репозиторию');
+    const role = await detectRole(token);
+    cfg = {token, repo:REPO, path:'kanban-data.json', role};
+    saveCfg(cfg);
+    if(res.ok){
+      try{
+        const data = await res.json();
+        fileSha = data.sha;
+        const raw = atob(data.content.replace(/\n/g,''));
+        const remote = raw ? JSON.parse(raw) : null;
+        if(remote && typeof remote==='object'){
+          if(Array.isArray(remote.cards)) state.cards = remote.cards;
+          if(Array.isArray(remote.members)) state.members = remote.members;
+          if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
+        }
+      } catch(parseErr){ console.warn('Файл данных пуст или повреждён, начинаем заново'); }
+    }
+    // 404 — файла ещё нет, это нормально при первом запуске
+    showBoard();
+    toast('Добро пожаловать! Роль: '+(role==='admin'?'Администратор 👑':'Участник команды 👋'),'ok');
+  } catch(e){
+    errEl.textContent=e.message;
+    errEl.style.display='block';
+    btn.textContent='Войти'; btn.disabled=false;
+  }
+}
+
+async function detectRole(token){
+  try{
+    const testPath='.role-check-tmp';
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${testPath}`,{
+      method:'PUT',
+      headers:{Authorization:`token ${token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+      body:JSON.stringify({message:'role check',content:btoa('test')})
+    });
+    if(res.ok){
+      const d=await res.json();
+      fetch(`https://api.github.com/repos/${REPO}/contents/${testPath}`,{
+        method:'DELETE',
+        headers:{Authorization:`token ${token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+        body:JSON.stringify({message:'role check cleanup',sha:d.content.sha})
+      }).catch(()=>{});
+      return 'admin';
+    }
+  } catch{}
+  return 'viewer';
+}
+
+// ═══════════════════════════════════════
+// GITHUB MODAL (смена токена)
+// ═══════════════════════════════════════
+function openGithubModal(){
+  document.getElementById('gh-error').style.display = 'none';
+  document.getElementById('gh-token-input').value = '';
+  const lbl = document.getElementById('current-role-label');
+  if(lbl) lbl.textContent = isAdmin() ? 'Администратор 👑' : 'Участник команды';
+  openOverlay('github-overlay');
+  setTimeout(()=>document.getElementById('gh-token-input').focus(), 150);
+}
+
+async function saveGithubCfg(){
+  const token = document.getElementById('gh-token-input').value.trim();
+  const errEl = document.getElementById('gh-error');
+  errEl.style.display = 'none';
+  if(!token){ errEl.textContent='Введи токен'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('gh-save-btn');
+  btn.textContent='Проверяем…'; btn.disabled=true;
+  try{
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/kanban-data.json`,{
+      headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
+    });
+    if(res.status===401) throw new Error('Токен неверный или истёк');
+    const role = await detectRole(token);
+    cfg = {token, repo:REPO, path:'kanban-data.json', role};
+    saveCfg(cfg);
+    closeOverlay('github-overlay');
+    updateGhBtn();
+    toast('Токен обновлён, роль: '+(role==='admin'?'Администратор':'Участник'),'ok');
+  } catch(e){
+    errEl.textContent=e.message; errEl.style.display='block';
+  } finally{
+    btn.textContent='Сохранить'; btn.disabled=false;
+  }
+}
+
+function updateGhBtn(){
+  const btn = document.getElementById('gh-settings-btn');
+  btn.textContent = cfg ? '✓ GitHub' : '⚙ GitHub';
+  btn.style.color = cfg ? 'var(--dev)' : '';
+}
+
+// ═══════════════════════════════════════
+// GITHUB SYNC
+// ═══════════════════════════════════════
+async function syncPull(){
+  if(!cfg) return;
+  try{
+    const res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`,{
+      headers:{Authorization:`token ${cfg.token}`,Accept:'application/vnd.github.v3+json'}
+    });
+    if(res.ok){
+      try{
+        const data = await res.json();
+        fileSha = data.sha;
+        const raw = atob(data.content.replace(/\n/g,''));
+        const remote = raw ? JSON.parse(raw) : null;
+        if(remote && typeof remote==='object'){
+          if(Array.isArray(remote.cards)) state.cards = remote.cards;
+          if(Array.isArray(remote.members)) state.members = remote.members;
+          if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
+        }
+        render();
+        setStatus('ok','Синхронизировано');
+      } catch(e){ console.warn('syncPull parse error:', e); }
+    }
+  } catch{}
+}
+
+// persist немедленно (важные действия: дедлайн, drag, создание)
+async function persist(){
+  if(!cfg) return;
+  setStatus('saving','Сохранение…');
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
+  try{
+    const res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`,{
+      method:'PUT',
+      headers:{Authorization:`token ${cfg.token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+      body:JSON.stringify({message:`update ${new Date().toISOString()}`,content,...(fileSha?{sha:fileSha}:{})})
+    });
+    if(res.ok){
+      const d=await res.json(); fileSha=d.content.sha;
+      localStorage.setItem('gamefy_last_save', new Date().toDateString());
+      setStatus('ok','Синхронизировано');
+    } else { setStatus('error','Ошибка GitHub'); }
+  } catch(e){ setStatus('error','Нет соединения'); }
+}
+
+// dailyPersist — сохраняет в GitHub не чаще 1 раза в день
+function dailyPersist(){
+  if(!cfg) return;
+  const last = localStorage.getItem('gamefy_last_save');
+  const today = new Date().toDateString();
+  if(last !== today){ persist(); }
+  else { saveLocalState(); } // локально всегда
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function setStatus(state, text){
+  document.getElementById('sync-dot').className = 'sync-dot '+state;
+  document.getElementById('sync-text').textContent = text;
+}
+
+function deadlineClass(dl){
+  if(!dl) return '';
+  const d = new Date(dl); const now = new Date();
+  const diff = (d-now)/(1000*60*60*24);
+  if(diff < 0) return 'overdue';
+  if(diff < 3) return 'soon';
+  return '';
+}
+
+function formatDate(d){
+  if(!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}.${m}.${y}`;
+}
+
+function esc(s){ try{ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }catch(e){return '';} }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+let toastTimer = null;
+function toast(msg, type=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show'+(type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.className='toast',2500);
+}
+</script>
+</body>
+</html>
