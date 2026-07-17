@@ -1271,15 +1271,19 @@ async function doLogin(){
     cfg = {token, repo:REPO, path:'kanban-data.json', role};
     saveCfg(cfg);
     if(res.ok){
-      const data = await res.json();
-      fileSha = data.sha;
-      const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
-      if(remote && typeof remote==='object'){
-        if(Array.isArray(remote.cards)) state.cards = remote.cards;
-        if(Array.isArray(remote.members)) state.members = remote.members;
-        if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
-      }
+      try{
+        const data = await res.json();
+        fileSha = data.sha;
+        const raw = atob(data.content.replace(/\n/g,''));
+        const remote = raw ? JSON.parse(raw) : null;
+        if(remote && typeof remote==='object'){
+          if(Array.isArray(remote.cards)) state.cards = remote.cards;
+          if(Array.isArray(remote.members)) state.members = remote.members;
+          if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
+        }
+      } catch(parseErr){ console.warn('Файл данных пуст или повреждён, начинаем заново'); }
     }
+    // 404 — файла ещё нет, это нормально при первом запуске
     showBoard();
     toast('Добро пожаловать! Роль: '+(role==='admin'?'Администратор 👑':'Участник команды 👋'),'ok');
   } catch(e){
@@ -1363,16 +1367,19 @@ async function syncPull(){
       headers:{Authorization:`token ${cfg.token}`,Accept:'application/vnd.github.v3+json'}
     });
     if(res.ok){
-      const data = await res.json();
-      fileSha = data.sha;
-      const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
-      if(remote && typeof remote === 'object'){
-        if(Array.isArray(remote.cards)) state.cards = remote.cards;
-        if(Array.isArray(remote.members)) state.members = remote.members;
-        if(typeof remote.doneHistory === 'number') state.doneHistory = remote.doneHistory;
-      }
-      render();
-      setStatus('ok','Синхронизировано');
+      try{
+        const data = await res.json();
+        fileSha = data.sha;
+        const raw = atob(data.content.replace(/\n/g,''));
+        const remote = raw ? JSON.parse(raw) : null;
+        if(remote && typeof remote==='object'){
+          if(Array.isArray(remote.cards)) state.cards = remote.cards;
+          if(Array.isArray(remote.members)) state.members = remote.members;
+          if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
+        }
+        render();
+        setStatus('ok','Синхронизировано');
+      } catch(e){ console.warn('syncPull parse error:', e); }
     }
   } catch{}
 }
