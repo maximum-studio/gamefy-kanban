@@ -2,10 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>✅</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>✅</text></svg>">
 <title>Kanban | Gamefy Task Manager</title>
-
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
@@ -69,8 +68,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 }
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{background:#6A4DEA;box-shadow:0 0 16px var(--accent-glow)}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2)}
-.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--border2);color:#fff;border-color:var(--accent2)}
+.role-badge{
+  font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;
+  background:var(--surface2);border:1px solid var(--border2);
+  display:none;white-space:nowrap;
+}
 .btn-danger-soft{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(248,113,113,.2)}
 .btn-danger-soft:hover{background:rgba(248,113,113,.2)}
 
@@ -472,9 +476,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-text">—</span>
     </div>
+    <span class="role-badge" id="role-badge"></span>
     <button class="btn btn-ghost" id="gh-settings-btn" title="GitHub синхронизация">⚙ GitHub</button>
     <button class="btn btn-ghost" id="team-btn">👥 Команда</button>
-    <button class="btn btn-primary" id="add-card-btn">+ Задача</button>
   </div>
 </header>
 
@@ -525,7 +529,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="modal-body">
       <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:4px">
         Токен хранится только в твоём браузере — в репозиторий не попадает.
-        Все в команде вводят токен у себя.
+        Каждый в команде вводит свой токен у себя. Права (администратор/участник)
+        определяются автоматически по твоему GitHub-аккаунту.
+        Данные сохраняются в GitHub не чаще раза в сутки — остальное время работа идёт локально.
       </p>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:4px">
         Нужен токен с правом <code style="color:var(--accent2)">repo</code>.<br>
@@ -543,6 +549,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger-soft btn-sm" id="gh-disconnect-btn" style="display:none;margin-right:auto">Отключить</button>
+      <button class="btn btn-ghost btn-sm" id="gh-sync-now-btn" style="display:none">⟳ Синхронизировать сейчас</button>
       <button class="btn btn-ghost" data-close="github-overlay">Отмена</button>
       <button class="btn btn-primary" id="gh-save-btn">Подключить</button>
     </div>
@@ -723,6 +730,18 @@ let state = {
 let cfg = null; // ЗАМЕНИ: { token: 'ghp_НОВЫЙ_ТОКЕН', repo: 'maximum-studio/gamefy-kanban', path: 'kanban-data.json' }
 let fileSha = null;
 
+// ── РОЛИ ──
+// Укажи здесь свой GitHub-логин (тот, под которым создан твой личный токен).
+// У этого аккаунта будут права администратора: добавление/удаление участников и удаление задач.
+// Остальные, кто подключится своим токеном, получат права обычного участника.
+const ADMIN_LOGIN = 'ЗАМЕНИ_НА_СВОЙ_GITHUB_LOGIN';
+let isAdmin = true;       // по умолчанию (пока GitHub не подключён — локальный режим, полный доступ)
+let currentLogin = null;
+
+// ── СИНХРОНИЗАЦИЯ ──
+const SYNC_INTERVAL_MS = 24*60*60*1000; // сохранять в GitHub не чаще раза в сутки
+let dirty = false;
+
 // editing state
 let editingCardId = null;
 let editingMemberId = null;
@@ -745,7 +764,7 @@ function loadCfg(){
 }
 function saveCfg(c){ localStorage.setItem('gamefy_cfg',JSON.stringify(c)); }
 
-window.addEventListener('DOMContentLoaded', ()=>{
+window.addEventListener('DOMContentLoaded', async ()=>{
   const saved = loadState();
   if(saved){ state = {...state,...saved}; }
   cfg = loadCfg();
@@ -770,9 +789,55 @@ window.addEventListener('DOMContentLoaded', ()=>{
   render();
   setupEvents();
   updateGhBtn();
-  if(cfg){ setStatus('ok','Подключено'); syncPull(); }
-  else { setStatus('','Не подключено'); }
+  if(cfg){
+    setStatus('ok','Подключено');
+    await checkAdmin();
+    applyPermissions();
+    await syncPull();
+  } else {
+    isAdmin = true;
+    setStatus('','Не подключено');
+    applyPermissions();
+  }
 });
+
+// ═══════════════════════════════════════
+// РОЛИ / ПРАВА ДОСТУПА
+// ═══════════════════════════════════════
+async function checkAdmin(){
+  if(!cfg){ isAdmin = true; currentLogin = null; return; }
+  try{
+    const res = await fetch('https://api.github.com/user', {
+      headers:{Authorization:`token ${cfg.token}`, Accept:'application/vnd.github.v3+json'}
+    });
+    if(res.ok){
+      const u = await res.json();
+      currentLogin = u.login || null;
+      isAdmin = !!currentLogin && currentLogin.toLowerCase() === ADMIN_LOGIN.toLowerCase();
+    } else {
+      currentLogin = null; isAdmin = false;
+    }
+  } catch{
+    currentLogin = null; isAdmin = false;
+  }
+}
+
+function applyPermissions(){
+  const addMemberBtn = document.getElementById('add-member-btn');
+  if(addMemberBtn) addMemberBtn.style.display = isAdmin ? '' : 'none';
+
+  const badge = document.getElementById('role-badge');
+  if(badge){
+    if(!cfg){ badge.style.display = 'none'; }
+    else{
+      badge.style.display = '';
+      badge.textContent = isAdmin ? '★ Администратор' : '👁 Участник';
+      badge.style.color = isAdmin ? 'var(--warning)' : 'var(--muted)';
+      badge.style.borderColor = isAdmin ? 'rgba(251,191,36,.35)' : 'var(--border2)';
+    }
+  }
+  renderTeamList();
+}
 
 // ═══════════════════════════════════════
 // RENDER
@@ -782,7 +847,7 @@ function render(){
   renderMobileTabs();
   renderStats();
   saveLocalState();
-  if(cfg) persist();
+  queueSync();
 }
 
 function renderStats(){
@@ -942,7 +1007,7 @@ function openCardModal(id=null, colId='todo'){
   subtasks = [];
   const c = id ? state.cards.find(x=>x.id===id) : null;
   document.getElementById('card-modal-title').textContent = id ? 'Редактировать задачу' : 'Новая задача';
-  document.getElementById('delete-card-btn').style.display = id ? '' : 'none';
+  document.getElementById('delete-card-btn').style.display = (id && isAdmin) ? '' : 'none';
   document.getElementById('f-title').value = c?.title||'';
   document.getElementById('f-link').value  = c?.link||'';
   document.getElementById('f-type').value  = c?.type||'';
@@ -1024,6 +1089,7 @@ function saveCard(){
 }
 
 function deleteCard(){
+  if(!isAdmin){ toast('Удалять задачи может только администратор','err'); return; }
   confirm('Удалить задачу?', '«'+( state.cards.find(c=>c.id===editingCardId)?.title||'')+'» будет удалена. Действие нельзя отменить.', ()=>{
     state.cards = state.cards.filter(c=>c.id!==editingCardId);
     closeOverlay('card-overlay');
@@ -1051,13 +1117,14 @@ function renderTeamList(){
         <div class="team-role">${esc(m.role)}</div>
       </div>
       <div class="team-done" title="Выполнено задач">✓ ${doneCnt}</div>
-      <button class="team-del" data-del="${m.id}" title="Удалить">✕</button>
+      ${isAdmin?`<button class="team-del" data-del="${m.id}" title="Удалить">✕</button>`:''}
     </div>`;
   }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Команда пуста</div>';
 
   list.querySelectorAll('.team-del').forEach(btn=>{
     btn.addEventListener('click', e=>{
       e.stopPropagation();
+      if(!isAdmin){ toast('Удалять участников может только администратор','err'); return; }
       const id = btn.dataset.del;
       const m = state.members.find(x=>x.id===id);
       confirm('Удалить участника?', `«${m?.name||''}» будет удалён из команды.`, ()=>{
@@ -1072,6 +1139,7 @@ function renderTeamList(){
 }
 
 function openAddMemberModal(memberId=null){
+  if(!memberId && !isAdmin){ toast('Добавлять участников может только администратор','err'); return; }
   editingMemberId = memberId;
   const m = memberId ? state.members.find(x=>x.id===memberId) : null;
   document.getElementById('add-member-title').textContent = memberId ? 'Редактировать' : 'Новый участник';
@@ -1084,6 +1152,7 @@ function openAddMemberModal(memberId=null){
 }
 
 function saveMember(){
+  if(!editingMemberId && !isAdmin){ toast('Добавлять участников может только администратор','err'); closeOverlay('add-member-overlay'); return; }
   const name = document.getElementById('m-name').value.trim();
   if(!name){ document.getElementById('m-name').focus(); return; }
   const data = {
@@ -1130,7 +1199,6 @@ function setupEvents(){
     ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); });
   });
 
-  document.getElementById('add-card-btn').addEventListener('click', ()=>openCardModal());
   document.getElementById('save-card-btn').addEventListener('click', saveCard);
   document.getElementById('delete-card-btn').addEventListener('click', deleteCard);
 
@@ -1156,6 +1224,13 @@ function setupEvents(){
     setStatus('','Не подключено');
     toast('GitHub отключён');
     updateGhBtn();
+    isAdmin = true; currentLogin = null;
+    applyPermissions();
+  });
+  document.getElementById('gh-sync-now-btn').addEventListener('click', async ()=>{
+    if(!cfg) return;
+    await persist(true);
+    toast('Синхронизировано с GitHub','ok');
   });
 
   // subtask add
@@ -1201,6 +1276,7 @@ function openGithubModal(){
   document.getElementById('gh-token-input').value = cfg?.token || '';
   document.getElementById('gh-repo-input').value  = cfg?.repo  || '';
   document.getElementById('gh-disconnect-btn').style.display = cfg ? '' : 'none';
+  document.getElementById('gh-sync-now-btn').style.display = cfg ? '' : 'none';
   openOverlay('github-overlay');
   setTimeout(()=>document.getElementById('gh-token-input').focus(), 150);
 }
@@ -1233,16 +1309,20 @@ async function saveGithubCfg(){
     if(res.ok){
       const data = await res.json();
       fileSha = data.sha;
-      const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
+      const remote = JSON.parse(b64ToUtf8(data.content.replace(/\n/g,'')));
       state = {...state,...remote};
-      render();
+      renderBoard(); renderMobileTabs(); renderStats(); saveLocalState();
     }
+
+    await checkAdmin();
+    applyPermissions();
 
     closeOverlay('github-overlay');
     setStatus('ok','Подключено');
     toast('GitHub подключён','ok');
     updateGhBtn();
-    persist();
+    dirty = true;
+    await persist(true);
   } catch(e){
     errEl.textContent = e.message;
     errEl.style.display = 'block';
@@ -1269,27 +1349,83 @@ async function syncPull(){
     if(res.ok){
       const data = await res.json();
       fileSha = data.sha;
-      const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
+      const remote = JSON.parse(b64ToUtf8(data.content.replace(/\n/g,'')));
       state = {...state,...remote};
-      render();
+      renderBoard(); renderMobileTabs(); renderStats(); saveLocalState();
       setStatus('ok','Синхронизировано');
+    } else if(res.status !== 404){
+      setStatus('error','Ошибка GitHub');
     }
-  } catch{}
+  } catch{
+    setStatus('error','Нет соединения');
+  }
 }
 
-async function persist(){
+// ═══════════════════════════════════════
+// СОХРАНЕНИЕ РАЗ В СУТКИ (throttle)
+// ═══════════════════════════════════════
+function queueSync(){
   if(!cfg) return;
+  dirty = true;
+  maybeSync();
+}
+
+function maybeSync(){
+  if(!cfg || !dirty) return;
+  const last = Number(localStorage.getItem('gamefy_last_sync')||0);
+  const now = Date.now();
+  if(now - last >= SYNC_INTERVAL_MS){
+    persist();
+  } else {
+    const hoursLeft = Math.max(1, Math.ceil((SYNC_INTERVAL_MS-(now-last))/3600000));
+    setStatus('','Сохранено локально · синхр. с GitHub через ~'+hoursLeft+'ч');
+  }
+}
+setInterval(maybeSync, 30*60*1000); // подстраховка: проверяем раз в 30 мин, вдруг вкладка открыта долго
+
+async function persist(force=false){
+  if(!cfg) return;
+  if(!force){
+    const last = Number(localStorage.getItem('gamefy_last_sync')||0);
+    if(Date.now()-last < SYNC_INTERVAL_MS) return; // ещё не пора — раз в сутки
+  }
   setStatus('saving','Сохранение…');
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
+  const content = utf8ToB64(JSON.stringify(state, null, 2));
+  const url = `https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`;
+  const headers = {Authorization:`token ${cfg.token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'};
   try{
-    const res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`,{
-      method:'PUT',
-      headers:{Authorization:`token ${cfg.token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+    let res = await fetch(url,{
+      method:'PUT', headers,
       body:JSON.stringify({message:`update ${new Date().toISOString()}`,content,...(fileSha?{sha:fileSha}:{})})
     });
-    if(res.ok){ const d=await res.json(); fileSha=d.content.sha; setStatus('ok','Синхронизировано'); }
-    else{ setStatus('error','Ошибка GitHub'); }
-  } catch(e){ setStatus('error','Нет соединения'); }
+
+    if(res.status === 409){
+      // sha устарел (кто-то сохранил раньше) — подтягиваем актуальный sha и пробуем ещё раз
+      const fresh = await fetch(url,{headers});
+      if(fresh.ok){
+        const freshData = await fresh.json();
+        fileSha = freshData.sha;
+        res = await fetch(url,{
+          method:'PUT', headers,
+          body:JSON.stringify({message:`update ${new Date().toISOString()}`,content,sha:fileSha})
+        });
+      }
+    }
+
+    if(res.ok){
+      const d = await res.json();
+      fileSha = d.content.sha;
+      dirty = false;
+      localStorage.setItem('gamefy_last_sync', String(Date.now()));
+      setStatus('ok','Синхронизировано');
+    } else if(res.status === 403){
+      setStatus('error','Нет прав на запись в GitHub');
+    } else {
+      setStatus('error','Ошибка GitHub');
+    }
+  } catch(e){
+    setStatus('error','Нет соединения');
+  }
 }
 
 // ═══════════════════════════════════════
