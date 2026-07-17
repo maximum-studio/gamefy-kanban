@@ -111,6 +111,19 @@
       "deadline": "",
       "subtasks": [],
       "assignees": []
+    },
+    {
+      "id": "mrozsl3jkl8o",
+      "title": "Карточка",
+      "link": "",
+      "type": "design",
+      "col": "doing",
+      "desc": "Проверка",
+      "deadline": "2027-12-12",
+      "subtasks": [],
+      "assignees": [
+        "mrom0rkdnz08"
+      ]
     }
   ],
   "members": [
