@@ -501,8 +501,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 </div>
 
 <!-- BOARD -->
+<div id="board-wrap">
 <div class="board-wrap">
   <div class="board" id="board"></div>
+</div>
 </div>
 
 <!-- HELP FAB -->
@@ -724,9 +726,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 </div>
 
 <script>
-// ═══════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// CONFIG — единственное место где надо вписать репо
+// ═══════════════════════════════════════════════════════
+const REPO = 'maximum-studio/gamefy-kanban';
+const DATA_PATH = 'kanban-data.json';
+
 const COLS = [
   {id:'todo',   label:'Tasks',  color:'#7C5CFC'},
   {id:'doing',  label:'Doing',  color:'#FBBF24'},
@@ -734,233 +741,210 @@ const COLS = [
   {id:'done',   label:'Done',   color:'#34D399'},
 ];
 
-let state = {
-  cards: [],
-  members: [],
-  doneHistory: 0,   // total ever moved to done
-};
-
-// GitHub config
-let cfg = null;
-
-// ── РОЛИ ──────────────────────────────────────────────
-// Роль определяется тем, какой токен ввёл пользователь при входе
-// cfg.role сохраняется в localStorage вместе с токеном
-function isAdmin(){ return cfg?.role === 'admin'; }
-// ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let state = { cards:[], members:[], doneHistory:0 };
+let cfg = null;       // {token, role}
 let fileSha = null;
-
-// editing state
+let dragId = null;
 let editingCardId = null;
 let editingMemberId = null;
-let confirmCallback = null;
+let confirmCb = null;
 let activeMobileCol = 'todo';
-let dragId = null;
-let subtasks = []; // temp while modal open
+let subtasks = [];
+let syncTimer = null;
 
-// ═══════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════
-function loadState(){
-  try{ return JSON.parse(localStorage.getItem('gamefy_state')||'null'); }catch{return null;}
+// ═══════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════
+function loadLocal(){
+  try{ return JSON.parse(localStorage.getItem('gamefy_state')||'null'); }catch{ return null; }
 }
-function saveLocalState(){
-  localStorage.setItem('gamefy_state', JSON.stringify(state));
+function saveLocal(){
+  try{ localStorage.setItem('gamefy_state', JSON.stringify(state)); }catch{}
 }
 function loadCfg(){
-  try{ return JSON.parse(localStorage.getItem('gamefy_cfg')||'null'); }catch{return null;}
+  try{ return JSON.parse(localStorage.getItem('gamefy_cfg')||'null'); }catch{ return null; }
 }
-function saveCfg(c){ localStorage.setItem('gamefy_cfg',JSON.stringify(c)); }
+function saveCfg(v){ try{ localStorage.setItem('gamefy_cfg', JSON.stringify(v)); }catch{} }
 
-// Список допустимых токенов (задаётся при деплое в коде — не в репо публично не светится,
-// потому что файл не содержит токенов пользователей; каждый вводит свой)
-// Роль определяется сервером по токену через GitHub API — мы проверяем какой репо доступен
-const REPO = 'maximum-studio/gamefy-kanban';
+function isAdmin(){ return cfg && cfg.role === 'admin'; }
 
-window.addEventListener('DOMContentLoaded', ()=>{
-  const saved = loadState();
-  if(saved){ state = {...state,...saved}; }
-  cfg = loadCfg();
-
-  setupEvents();
-
-  if(cfg){
-    // Уже залогинен — скрываем экран входа, показываем доску
-    showBoard();
-  } else {
-    // Показываем экран входа
-    showLoginScreen();
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const saved = loadLocal();
+    if(saved && typeof saved === 'object'){
+      if(Array.isArray(saved.cards))   state.cards   = saved.cards;
+      if(Array.isArray(saved.members)) state.members = saved.members;
+      if(typeof saved.doneHistory === 'number') state.doneHistory = saved.doneHistory;
+    }
+    cfg = loadCfg();
+    setupEvents();
+    if(cfg){ showBoard(); } else { showLoginScreen(); }
+  } catch(e) {
+    console.error('Boot error:', e);
+    document.body.innerHTML = '<div style="color:#F87171;padding:40px;font-family:monospace">Ошибка загрузки: ' + e.message + '</div>';
   }
 });
 
+// ═══════════════════════════════════════════════════════
+// SCREENS
+// ═══════════════════════════════════════════════════════
 function showLoginScreen(){
-  document.getElementById('login-screen').style.display = 'flex';
-  setTimeout(()=>document.getElementById('login-token').focus(), 200);
+  el('login-screen').style.display = 'flex';
+  el('board-wrap').style.display   = 'none';
+  setTimeout(() => el('login-token').focus(), 100);
 }
 
 function showBoard(){
-  document.getElementById('login-screen').style.display = 'none';
+  el('login-screen').style.display = 'none';
+  el('board-wrap').style.display   = '';
   updateGhBtn();
 
-  // Seed demo data только если совсем пусто и нет данных из GitHub
   if(!state.members.length){
     state.members = [
-      {id:uid(), name:'Анна Кова', role:'UX/UI Designer', tg:'https://t.me/anna', avatar:''},
+      {id:uid(), name:'Анна К.', role:'UX/UI Designer', tg:'https://t.me/anna', avatar:''},
       {id:uid(), name:'Сергей М.', role:'Dev', tg:'https://t.me/serg', avatar:''},
     ];
   }
   if(!state.cards.length){
     state.cards = [
-      {id:uid(),title:'Главный экран',type:'design',col:'todo',desc:'Разработать главный экран приложения',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цветовая схема',done:false},{t:'Финальный макет',done:false}],assignees:[state.members[0]?.id].filter(Boolean),deadline:'2025-08-10'},
-      {id:uid(),title:'API авторизации',type:'dev',col:'doing',desc:'Написать endpoint для JWT авторизации',link:'',subtasks:[{t:'Модель User',done:true},{t:'JWT middleware',done:true},{t:'Тесты',done:false}],assignees:[state.members[1]?.id].filter(Boolean),deadline:'2025-07-20'},
+      {id:uid(),title:'Главный экран',type:'design',col:'todo',desc:'',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цветовая схема',done:false}],assignees:[state.members[0].id],deadline:'2025-08-10'},
+      {id:uid(),title:'API авторизации',type:'dev',col:'doing',desc:'',link:'',subtasks:[{t:'Модель User',done:true},{t:'Тесты',done:false}],assignees:[state.members[1].id],deadline:'2025-07-20'},
     ];
-    state.doneHistory = 0;
   }
 
   render();
-  setStatus('ok','Подключено');
-  syncPull();
-  setInterval(syncPull, 5 * 60 * 1000);
+
+  if(cfg){
+    syncPull();
+    if(!syncTimer) syncTimer = setInterval(syncPull, 5*60*1000);
+  }
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // RENDER
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 function render(){
   renderBoard();
   renderMobileTabs();
   renderStats();
-  saveLocalState();
-  // GitHub sync вызывается вручную из действий, не из каждого render
+  saveLocal();
 }
 
 function renderStats(){
-  document.getElementById('done-count').textContent = state.doneHistory;
-  const doneCnt = state.cards.filter(c=>c.col==='done').length;
+  el('done-count').textContent = state.doneHistory;
   const total = state.cards.length;
-  const ratio = total ? doneCnt/total : 0;
-  const segs = document.querySelectorAll('.progress-seg');
-  segs.forEach((seg,i)=>{
-    const threshold = (i+1)/segs.length;
-    seg.classList.toggle('filled', ratio >= threshold - 0.001);
+  const done  = state.cards.filter(c=>c.col==='done').length;
+  const ratio = total ? done/total : 0;
+  document.querySelectorAll('.progress-seg').forEach((seg,i)=>{
+    seg.classList.toggle('filled', ratio >= (i+1)/5 - 0.001);
   });
 }
 
 function renderBoard(){
-  const board = document.getElementById('board');
+  const board = el('board');
   board.innerHTML = '';
-  COLS.forEach(col=>{
+  COLS.forEach(col => {
     const colCards = state.cards.filter(c=>c.col===col.id);
-    const el = document.createElement('div');
-    el.className = 'column' + (col.id===activeMobileCol?' mobile-active':'');
-    el.dataset.col = col.id;
-    el.innerHTML = `
+    const div = document.createElement('div');
+    div.className = 'column' + (col.id===activeMobileCol?' mobile-active':'');
+    div.dataset.col = col.id;
+    div.innerHTML = `
       <div class="col-header">
         <div class="col-left">
           <div class="col-indicator" style="background:${col.color}"></div>
           <span class="col-name">${col.label}</span>
           <span class="col-count">${colCards.length}</span>
         </div>
-        <button class="col-add" data-col="${col.id}" title="Добавить задачу">+</button>
+        <button class="col-add" data-col="${col.id}">+</button>
       </div>
       <div class="cards-list" id="cards-${col.id}">
-        ${colCards.length===0?'<div class="col-empty">Нет задач</div>':''}
-        ${colCards.map(c=>cardHTML(c)).join('')}
-      </div>
-    `;
-    board.appendChild(el);
+        ${colCards.length===0 ? '<div class="col-empty">Нет задач</div>' : ''}
+        ${colCards.map(cardHTML).join('')}
+      </div>`;
+    board.appendChild(div);
   });
 
-  // events
-  board.querySelectorAll('.col-add').forEach(btn=>{
-    btn.addEventListener('click', ()=>openCardModal(null, btn.dataset.col));
-  });
-  board.querySelectorAll('.card').forEach(card=>{
-    card.addEventListener('click', ()=>openCardModal(card.dataset.id));
+  board.querySelectorAll('.col-add').forEach(btn =>
+    btn.addEventListener('click', () => openCardModal(null, btn.dataset.col))
+  );
+  board.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => openCardModal(card.dataset.id));
     card.addEventListener('dragstart', onDragStart);
-    card.addEventListener('dragend', onDragEnd);
+    card.addEventListener('dragend',   onDragEnd);
   });
-  board.querySelectorAll('.cards-list').forEach(list=>{
-    list.addEventListener('dragover', onDragOver);
-    list.addEventListener('dragleave', onDragLeave);
-    list.addEventListener('drop', onDrop);
-  });
-  board.querySelectorAll('.column').forEach(col=>{
-    col.addEventListener('dragover', e=>{ e.preventDefault(); });
-    col.addEventListener('drop', e=>{
-      e.preventDefault();
-      const colId = col.dataset.col;
-      moveCardToCol(dragId, colId);
-    });
+  board.querySelectorAll('.cards-list, .column').forEach(zone => {
+    zone.addEventListener('dragover',  onDragOver);
+    zone.addEventListener('dragleave', onDragLeave);
+    zone.addEventListener('drop',      onDrop);
   });
 }
 
 function cardHTML(c){
-  const member = c.assignees?.length ? state.members.find(m=>m.id===c.assignees[0]) : null;
-  const done = c.subtasks?.filter(s=>s.done).length||0;
-  const total = c.subtasks?.length||0;
-  const pct = total ? Math.round(done/total*100) : 0;
-  const tagHTML = c.type==='design'
+  const member = c.assignees && c.assignees.length
+    ? state.members.find(m=>m.id===c.assignees[0]) : null;
+  const done  = (c.subtasks||[]).filter(s=>s.done).length;
+  const total = (c.subtasks||[]).length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+  const tag   = c.type==='design'
     ? '<span class="card-tag tag-design">Design</span>'
     : c.type==='dev'
-    ? '<span class="card-tag tag-dev">Dev</span>'
-    : '';
-  const dlClass = deadlineClass(c.deadline);
-  const dlLabel = c.deadline ? formatDate(c.deadline) : '';
+    ? '<span class="card-tag tag-dev">Dev</span>' : '';
+  const dlCls = deadlineCls(c.deadline);
+  const dlLbl = c.deadline ? fmtDate(c.deadline) : '';
   const assigneeHTML = member
     ? `<div class="card-assignee-info">
-         <a class="card-assignee-name" href="${esc(member.tg)}" target="_blank">${esc(member.name)}</a>
+         <a class="card-assignee-name" href="${esc(member.tg||'#')}" target="_blank">${esc(member.name)}</a>
          <div class="card-assignee-role">${esc(member.role)}</div>
        </div>`
-    : '<div style="font-size:11px;color:var(--muted2)">Нет исполнителя</div>';
-  return `
-    <div class="card" draggable="true" data-id="${c.id}">
-      <div class="card-top">
-        <div class="card-title">${esc(c.title)}</div>
-        ${tagHTML}
-      </div>
-      ${total>0?`
-      <div class="card-progress">
-        <div class="card-progress-label">${done}/${total} подзадач</div>
-        <div class="card-progress-bar"><div class="card-progress-fill" style="width:${pct}%"></div></div>
-      </div>`:''}
-      <div class="card-bottom">
-        ${assigneeHTML}
-        ${dlLabel?`<div class="card-deadline ${dlClass}">${dlLabel}</div>`:''}
-      </div>
+    : '<div style="font-size:11px;color:var(--muted2)">—</div>';
+  return `<div class="card" draggable="true" data-id="${c.id}">
+    <div class="card-top">
+      <div class="card-title">${esc(c.title)}</div>${tag}
     </div>
-  `;
+    ${total>0?`<div class="card-progress">
+      <div class="card-progress-label">${done}/${total} подзадач</div>
+      <div class="card-progress-bar"><div class="card-progress-fill" style="width:${pct}%"></div></div>
+    </div>`:''}
+    <div class="card-bottom">
+      ${assigneeHTML}
+      ${dlLbl?`<div class="card-deadline ${dlCls}">${dlLbl}</div>`:''}
+    </div>
+  </div>`;
 }
 
 function renderMobileTabs(){
   COLS.forEach(col=>{
-    const cnt = state.cards.filter(c=>c.col===col.id).length;
-    const badge = document.getElementById('mtab-'+col.id);
-    if(badge) badge.textContent = cnt;
+    const b = document.getElementById('mtab-'+col.id);
+    if(b) b.textContent = state.cards.filter(c=>c.col===col.id).length;
   });
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // DRAG & DROP
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 function onDragStart(e){
   dragId = e.currentTarget.dataset.id;
-  const el = e.currentTarget;
-  setTimeout(()=>{ if(el && el.isConnected) el.classList.add('dragging'); }, 0);
+  const el_ = e.currentTarget;
+  setTimeout(()=>{ if(el_.isConnected) el_.classList.add('dragging'); }, 0);
 }
 function onDragEnd(e){
-  if(e.currentTarget && e.currentTarget.isConnected)
-    e.currentTarget.classList.remove('dragging');
+  if(e.currentTarget.isConnected) e.currentTarget.classList.remove('dragging');
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
 }
 function onDragOver(e){
   e.preventDefault();
-  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : null;
+  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : e.currentTarget;
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
   if(col) col.classList.add('drag-over');
 }
 function onDragLeave(e){
-  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : null;
+  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : e.currentTarget;
   if(col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
 }
 function onDrop(e){
@@ -968,77 +952,64 @@ function onDrop(e){
   const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : e.currentTarget;
   const colId = col ? col.dataset.col : null;
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
-  if(colId && dragId) moveCardToCol(dragId, colId);
+  if(colId && dragId) moveCard(dragId, colId);
   dragId = null;
 }
-
-function moveCardToCol(cardId, colId){
+function moveCard(cardId, colId){
   const card = state.cards.find(c=>c.id===cardId);
-  if(!card) return;
-  const wasInDone = card.col==='done';
-  const goesToDone = colId==='done';
+  if(!card || card.col===colId) return;
+  if(colId==='done' && card.col!=='done') state.doneHistory++;
   card.col = colId;
-  if(goesToDone && !wasInDone){ state.doneHistory++; }
   render();
   persist();
-  toast('Задача перемещена');
+  toast('Перемещено');
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // CARD MODAL
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 function openCardModal(id=null, colId='todo'){
   editingCardId = id;
   subtasks = [];
   const c = id ? state.cards.find(x=>x.id===id) : null;
-  document.getElementById('card-modal-title').textContent = id ? 'Редактировать задачу' : 'Новая задача';
-  document.getElementById('delete-card-btn').style.display = (id && isAdmin()) ? '' : 'none';
-  document.getElementById('f-title').value = c?.title||'';
-  document.getElementById('f-link').value  = c?.link||'';
-  document.getElementById('f-type').value  = c?.type||'';
-  document.getElementById('f-col').value   = c?.col||colId;
-  document.getElementById('f-desc').value  = c?.desc||'';
-  document.getElementById('f-deadline').value = c?.deadline||'';
-  subtasks = c?.subtasks ? JSON.parse(JSON.stringify(c.subtasks)) : [];
+  el('card-modal-title').textContent = id ? 'Редактировать задачу' : 'Новая задача';
+  el('delete-card-btn').style.display = (id && isAdmin()) ? '' : 'none';
+  el('f-title').value    = c ? c.title    : '';
+  el('f-link').value     = c ? c.link||'' : '';
+  el('f-type').value     = c ? c.type||'' : '';
+  el('f-col').value      = c ? c.col      : colId;
+  el('f-desc').value     = c ? c.desc||'' : '';
+  el('f-deadline').value = c ? c.deadline||'' : '';
+  subtasks = c && c.subtasks ? JSON.parse(JSON.stringify(c.subtasks)) : [];
   renderSubtasks();
-  renderAssigneePicker(c?.assignees||[]);
+  renderAssigneePicker(c ? c.assignees||[] : []);
   openOverlay('card-overlay');
-  setTimeout(()=>document.getElementById('f-title').focus(),150);
+  setTimeout(()=>el('f-title').focus(), 100);
 }
 
 function renderSubtasks(){
-  const list = document.getElementById('subtasks-list');
-  list.innerHTML = subtasks.map((s,i)=>`
+  el('subtasks-list').innerHTML = subtasks.map((s,i)=>`
     <div class="subtask-item">
       <input type="checkbox" class="subtask-check" data-i="${i}" ${s.done?'checked':''}>
       <span class="subtask-text${s.done?' done-text':''}">${esc(s.t)}</span>
-      <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px" data-del="${i}">✕</button>
-    </div>
-  `).join('');
-  list.querySelectorAll('.subtask-check').forEach(cb=>{
-    cb.addEventListener('change', ()=>{
-      subtasks[+cb.dataset.i].done = cb.checked;
-      renderSubtasks();
-    });
+      <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px" data-del="${i}">✕</button>
+    </div>`).join('');
+  el('subtasks-list').querySelectorAll('.subtask-check').forEach(cb=>{
+    cb.addEventListener('change', ()=>{ subtasks[+cb.dataset.i].done=cb.checked; renderSubtasks(); });
   });
-  list.querySelectorAll('[data-del]').forEach(btn=>{
+  el('subtasks-list').querySelectorAll('[data-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{ subtasks.splice(+btn.dataset.del,1); renderSubtasks(); });
   });
 }
 
 function renderAssigneePicker(selected=[]){
-  const picker = document.getElementById('assignee-picker');
-  picker.innerHTML = state.members.map(m=>{
-    const isSel = selected.includes(m.id);
-    return `<div class="ap-chip ${isSel?'selected':''}" data-id="${m.id}">
-      <div class="ap-avatar">${m.avatar?`<img src="${esc(m.avatar)}">`:`${m.name[0]||'?'}`}</div>
+  el('assignee-picker').innerHTML = state.members.map(m=>`
+    <div class="ap-chip ${selected.includes(m.id)?'selected':''}" data-id="${m.id}">
+      <div class="ap-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:(m.name||'?')[0].toUpperCase()}</div>
       ${esc(m.name)}
-    </div>`;
-  }).join('');
-  picker.querySelectorAll('.ap-chip').forEach(chip=>{
-    chip.addEventListener('click', ()=>{
-      chip.classList.toggle('selected');
-    });
+    </div>`).join('');
+  el('assignee-picker').querySelectorAll('.ap-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>chip.classList.toggle('selected'));
   });
 }
 
@@ -1047,19 +1018,15 @@ function getSelectedAssignees(){
 }
 
 function saveCard(){
-  const title = document.getElementById('f-title').value.trim();
-  if(!title){ document.getElementById('f-title').focus(); return; }
+  const title = el('f-title').value.trim();
+  if(!title){ el('f-title').focus(); return; }
   const data = {
-    title,
-    link: document.getElementById('f-link').value.trim(),
-    type: document.getElementById('f-type').value,
-    col:  document.getElementById('f-col').value,
-    desc: document.getElementById('f-desc').value.trim(),
-    deadline: document.getElementById('f-deadline').value,
-    subtasks: JSON.parse(JSON.stringify(subtasks)),
-    assignees: getSelectedAssignees(),
+    title, link:el('f-link').value.trim(), type:el('f-type').value,
+    col:el('f-col').value, desc:el('f-desc').value.trim(),
+    deadline:el('f-deadline').value,
+    subtasks:JSON.parse(JSON.stringify(subtasks)),
+    assignees:getSelectedAssignees(),
   };
-
   if(editingCardId){
     const idx = state.cards.findIndex(c=>c.id===editingCardId);
     const old = state.cards[idx];
@@ -1071,78 +1038,78 @@ function saveCard(){
   closeOverlay('card-overlay');
   render();
   persist();
-  toast('Задача сохранена','ok');
+  toast('Сохранено','ok');
 }
 
 function deleteCard(){
-  confirm('Удалить задачу?', '«'+( state.cards.find(c=>c.id===editingCardId)?.title||'')+'» будет удалена. Действие нельзя отменить.', ()=>{
+  if(!editingCardId || !isAdmin()) return;
+  const title = state.cards.find(c=>c.id===editingCardId)?.title||'';
+  showConfirm('Удалить задачу?', `«${title}» будет удалена безвозвратно.`, ()=>{
     state.cards = state.cards.filter(c=>c.id!==editingCardId);
     closeOverlay('card-overlay');
     render();
     persist();
-    toast('Задача удалена');
+    toast('Удалено');
   });
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // TEAM MODAL
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 function openTeamModal(){
   renderTeamList();
+  el('add-member-btn').style.display = isAdmin() ? '' : 'none';
   openOverlay('team-overlay');
 }
 
 function renderTeamList(){
-  const list = document.getElementById('team-list');
+  const list = el('team-list');
+  if(!state.members.length){
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Команда пуста</div>';
+    return;
+  }
   list.innerHTML = state.members.map(m=>{
-    const doneCnt = state.cards.filter(c=>c.col==='done'&&c.assignees?.includes(m.id)).length;
-    return `<div class="team-member" data-id="${m.id}">
-      <div class="team-avatar">${m.avatar?`<img src="${esc(m.avatar)}">`:`${m.name[0]||'?'}`}</div>
+    const doneCnt = state.cards.filter(c=>c.col==='done'&&(c.assignees||[]).includes(m.id)).length;
+    return `<div class="team-member">
+      <div class="team-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:esc((m.name||'?')[0].toUpperCase())}</div>
       <div class="team-info">
-        <a class="team-name" href="${esc(m.tg)}" target="_blank">${esc(m.name)}</a>
+        <a class="team-name" href="${esc(m.tg||'#')}" target="_blank">${esc(m.name)}</a>
         <div class="team-role">${esc(m.role)}</div>
       </div>
-      <div class="team-done" title="Выполнено задач">✓ ${doneCnt}</div>
-      ${isAdmin() ? `<button class="team-del" data-del="${m.id}" title="Удалить">✕</button>` : ''}
+      <div class="team-done">✓ ${doneCnt}</div>
+      ${isAdmin()?`<button class="team-del" data-id="${m.id}">✕</button>`:''}
     </div>`;
-  }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Команда пуста</div>';
-
+  }).join('');
   list.querySelectorAll('.team-del').forEach(btn=>{
     btn.addEventListener('click', e=>{
       e.stopPropagation();
-      const id = btn.dataset.del;
-      const m = state.members.find(x=>x.id===id);
-      confirm('Удалить участника?', `«${m?.name||''}» будет удалён из команды.`, ()=>{
-        state.members = state.members.filter(x=>x.id!==id);
-        state.cards.forEach(c=>{ c.assignees = c.assignees?.filter(a=>a!==id)||[]; });
+      const m = state.members.find(x=>x.id===btn.dataset.id);
+      showConfirm('Удалить участника?', `«${m?.name||''}» будет удалён.`, ()=>{
+        state.members = state.members.filter(x=>x.id!==btn.dataset.id);
+        state.cards.forEach(c=>{ c.assignees=(c.assignees||[]).filter(a=>a!==btn.dataset.id); });
         renderTeamList();
-        saveLocalState();
+        saveLocal();
+        persist();
         toast('Участник удалён');
       });
     });
   });
 }
 
-function openAddMemberModal(memberId=null){
-  editingMemberId = memberId;
-  const m = memberId ? state.members.find(x=>x.id===memberId) : null;
-  document.getElementById('add-member-title').textContent = memberId ? 'Редактировать' : 'Новый участник';
-  document.getElementById('m-name').value   = m?.name||'';
-  document.getElementById('m-tg').value     = m?.tg||'';
-  document.getElementById('m-role').value   = m?.role||'UX/UI Designer';
-  document.getElementById('m-avatar').value = m?.avatar||'';
+function openAddMemberModal(){
+  editingMemberId = null;
+  el('m-name').value=''; el('m-tg').value='';
+  el('m-role').value='UX/UI Designer'; el('m-avatar').value='';
   openOverlay('add-member-overlay');
-  setTimeout(()=>document.getElementById('m-name').focus(),150);
+  setTimeout(()=>el('m-name').focus(),100);
 }
 
 function saveMember(){
-  const name = document.getElementById('m-name').value.trim();
-  if(!name){ document.getElementById('m-name').focus(); return; }
+  const name = el('m-name').value.trim();
+  if(!name){ el('m-name').focus(); return; }
   const data = {
-    name,
-    tg:     document.getElementById('m-tg').value.trim(),
-    role:   document.getElementById('m-role').value,
-    avatar: document.getElementById('m-avatar').value.trim(),
+    name, tg:el('m-tg').value.trim(),
+    role:el('m-role').value, avatar:el('m-avatar').value.trim()
   };
   if(editingMemberId){
     const idx = state.members.findIndex(m=>m.id===editingMemberId);
@@ -1152,161 +1119,73 @@ function saveMember(){
   }
   closeOverlay('add-member-overlay');
   renderTeamList();
-  saveLocalState();
+  saveLocal();
   persist();
   toast('Участник сохранён','ok');
 }
 
-// ═══════════════════════════════════════
-// OVERLAY HELPERS
-// ═══════════════════════════════════════
-function openOverlay(id){ document.getElementById(id).classList.add('open'); }
-function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
-
-function confirm(title, text, cb){
-  document.getElementById('confirm-title').textContent = title;
-  document.getElementById('confirm-text').textContent  = text;
-  confirmCallback = cb;
-  openOverlay('confirm-overlay');
-}
-
-// ═══════════════════════════════════════
-// SETUP EVENTS
-// ═══════════════════════════════════════
-function setupEvents(){
-  // close buttons
-  document.querySelectorAll('[data-close]').forEach(btn=>{
-    btn.addEventListener('click', ()=>closeOverlay(btn.dataset.close));
-  });
-  // overlay background click
-  document.querySelectorAll('.overlay').forEach(ov=>{
-    ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); });
-  });
-
-  document.getElementById('save-card-btn').addEventListener('click', saveCard);
-  document.getElementById('delete-card-btn').addEventListener('click', deleteCard);
-
-  document.getElementById('team-btn').addEventListener('click', openTeamModal);
-  const addMemberBtn = document.getElementById('add-member-btn');
-  if(isAdmin()) addMemberBtn.style.display = '';
-  addMemberBtn.addEventListener('click', ()=>{ if(isAdmin()) openAddMemberModal(); });
-  document.getElementById('save-member-btn').addEventListener('click', saveMember);
-
-  document.getElementById('confirm-ok-btn').addEventListener('click', ()=>{
-    closeOverlay('confirm-overlay');
-    confirmCallback?.();
-    confirmCallback = null;
-  });
-
-  document.getElementById('help-fab').addEventListener('click', ()=>openOverlay('help-overlay'));
-
-  // Login screen
-  document.getElementById('login-btn').addEventListener('click', doLogin);
-  document.getElementById('login-token').addEventListener('keydown', e=>{
-    if(e.key==='Enter') doLogin();
-  });
-
-  // GitHub settings (смена токена / выход)
-  document.getElementById('gh-settings-btn').addEventListener('click', openGithubModal);
-  document.getElementById('gh-save-btn').addEventListener('click', saveGithubCfg);
-  document.getElementById('gh-disconnect-btn').addEventListener('click', ()=>{
-    cfg = null; fileSha = null;
-    localStorage.removeItem('gamefy_cfg');
-    closeOverlay('github-overlay');
-    showLoginScreen();
-    toast('Вы вышли');
-  });
-
-  // subtask add
-  document.getElementById('subtask-add-btn').addEventListener('click', addSubtask);
-  document.getElementById('subtask-input').addEventListener('keydown', e=>{
-    if(e.key==='Enter'){ e.preventDefault(); addSubtask(); }
-  });
-
-  // mobile tabs
-  document.getElementById('mobile-tabs').addEventListener('click', e=>{
-    const tab = e.target.closest('.mobile-tab');
-    if(!tab) return;
-    activeMobileCol = tab.dataset.col;
-    document.querySelectorAll('.mobile-tab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    renderBoard();
-  });
-
-  // keyboard esc
-  document.addEventListener('keydown', e=>{
-    if(e.key==='Escape'){
-      document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));
-    }
-  });
-}
-
-function addSubtask(){
-  const inp = document.getElementById('subtask-input');
-  const val = inp.value.trim();
-  if(!val) return;
-  subtasks.push({t:val, done:false});
-  inp.value = '';
-  renderSubtasks();
-  inp.focus();
-}
-
-// ═══════════════════════════════════════
-// ВХОД
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════
 async function doLogin(){
-  const token = document.getElementById('login-token').value.trim();
-  const errEl = document.getElementById('login-error');
-  const btn   = document.getElementById('login-btn');
+  const token = el('login-token').value.trim();
+  const errEl = el('login-error');
+  const btn   = el('login-btn');
   errEl.style.display = 'none';
   if(!token){ errEl.textContent='Введи токен'; errEl.style.display='block'; return; }
   btn.textContent='Проверяем…'; btn.disabled=true;
   try{
-    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/kanban-data.json`,{
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`,{
       headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
     });
     if(res.status===401) throw new Error('Токен неверный или не существует');
     if(res.status===403) throw new Error('Нет доступа к репозиторию');
+
     const role = await detectRole(token);
-    cfg = {token, repo:REPO, path:'kanban-data.json', role};
+    cfg = {token, role};
     saveCfg(cfg);
+
     if(res.ok){
       try{
         const data = await res.json();
         fileSha = data.sha;
         const raw = atob(data.content.replace(/\n/g,''));
-        const remote = raw ? JSON.parse(raw) : null;
-        if(remote && typeof remote==='object'){
-          if(Array.isArray(remote.cards)) state.cards = remote.cards;
-          if(Array.isArray(remote.members)) state.members = remote.members;
-          if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
+        if(raw){
+          const remote = JSON.parse(raw);
+          if(remote && typeof remote==='object'){
+            if(Array.isArray(remote.cards))   state.cards   = remote.cards;
+            if(Array.isArray(remote.members)) state.members = remote.members;
+            if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
+          }
         }
-      } catch(parseErr){ console.warn('Файл данных пуст или повреждён, начинаем заново'); }
+      } catch(pe){ console.warn('Data parse warning:', pe); }
     }
-    // 404 — файла ещё нет, это нормально при первом запуске
+    // 404 — файла нет, начинаем с чистой доски, это нормально
+
     showBoard();
-    toast('Добро пожаловать! Роль: '+(role==='admin'?'Администратор 👑':'Участник команды 👋'),'ok');
+    toast('Добро пожаловать! Роль: '+(role==='admin'?'Администратор 👑':'Участник 👋'),'ok');
   } catch(e){
-    errEl.textContent=e.message;
-    errEl.style.display='block';
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  } finally{
     btn.textContent='Войти'; btn.disabled=false;
   }
 }
 
 async function detectRole(token){
   try{
-    const testPath='.role-check-tmp';
-    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${testPath}`,{
+    const path = '.gamefy-role-check';
+    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{
       method:'PUT',
       headers:{Authorization:`token ${token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-      body:JSON.stringify({message:'role check',content:btoa('test')})
+      body:JSON.stringify({message:'role check',content:btoa('1')})
     });
-    if(res.ok){
-      const d=await res.json();
-      fetch(`https://api.github.com/repos/${REPO}/contents/${testPath}`,{
+    if(r.ok){
+      const d = await r.json();
+      fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{
         method:'DELETE',
         headers:{Authorization:`token ${token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-        body:JSON.stringify({message:'role check cleanup',sha:d.content.sha})
+        body:JSON.stringify({message:'cleanup',sha:d.content.sha})
       }).catch(()=>{});
       return 'admin';
     }
@@ -1314,137 +1193,213 @@ async function detectRole(token){
   return 'viewer';
 }
 
-// ═══════════════════════════════════════
-// GITHUB MODAL (смена токена)
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// GITHUB SETTINGS MODAL
+// ═══════════════════════════════════════════════════════
 function openGithubModal(){
-  document.getElementById('gh-error').style.display = 'none';
-  document.getElementById('gh-token-input').value = '';
-  const lbl = document.getElementById('current-role-label');
+  el('gh-error').style.display = 'none';
+  el('gh-token-input').value   = '';
+  const lbl = el('current-role-label');
   if(lbl) lbl.textContent = isAdmin() ? 'Администратор 👑' : 'Участник команды';
   openOverlay('github-overlay');
-  setTimeout(()=>document.getElementById('gh-token-input').focus(), 150);
+  setTimeout(()=>el('gh-token-input').focus(),100);
 }
 
 async function saveGithubCfg(){
-  const token = document.getElementById('gh-token-input').value.trim();
-  const errEl = document.getElementById('gh-error');
+  const token = el('gh-token-input').value.trim();
+  const errEl = el('gh-error');
   errEl.style.display = 'none';
   if(!token){ errEl.textContent='Введи токен'; errEl.style.display='block'; return; }
-  const btn = document.getElementById('gh-save-btn');
+  const btn = el('gh-save-btn');
   btn.textContent='Проверяем…'; btn.disabled=true;
   try{
-    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/kanban-data.json`,{
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`,{
       headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
     });
     if(res.status===401) throw new Error('Токен неверный или истёк');
     const role = await detectRole(token);
-    cfg = {token, repo:REPO, path:'kanban-data.json', role};
+    cfg = {token, role};
     saveCfg(cfg);
     closeOverlay('github-overlay');
     updateGhBtn();
-    toast('Токен обновлён, роль: '+(role==='admin'?'Администратор':'Участник'),'ok');
+    toast('Токен обновлён','ok');
   } catch(e){
     errEl.textContent=e.message; errEl.style.display='block';
-  } finally{
-    btn.textContent='Сохранить'; btn.disabled=false;
-  }
+  } finally{ btn.textContent='Сохранить'; btn.disabled=false; }
 }
 
 function updateGhBtn(){
-  const btn = document.getElementById('gh-settings-btn');
-  btn.textContent = cfg ? '✓ GitHub' : '⚙ GitHub';
-  btn.style.color = cfg ? 'var(--dev)' : '';
+  const btn = el('gh-settings-btn');
+  if(!btn) return;
+  btn.textContent = cfg ? (isAdmin()?'👑 Админ':'👤 Участник') : '⚙ Войти';
+  btn.style.color = cfg ? (isAdmin()?'var(--warning)':'var(--dev)') : '';
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 // GITHUB SYNC
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════
 async function syncPull(){
   if(!cfg) return;
   try{
-    const res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`,{
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`,{
       headers:{Authorization:`token ${cfg.token}`,Accept:'application/vnd.github.v3+json'}
     });
-    if(res.ok){
-      try{
-        const data = await res.json();
-        fileSha = data.sha;
-        const raw = atob(data.content.replace(/\n/g,''));
-        const remote = raw ? JSON.parse(raw) : null;
-        if(remote && typeof remote==='object'){
-          if(Array.isArray(remote.cards)) state.cards = remote.cards;
-          if(Array.isArray(remote.members)) state.members = remote.members;
-          if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
-        }
-        render();
-        setStatus('ok','Синхронизировано');
-      } catch(e){ console.warn('syncPull parse error:', e); }
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data.sha === fileSha) return; // нет изменений
+    fileSha = data.sha;
+    const raw = atob(data.content.replace(/\n/g,''));
+    if(!raw) return;
+    const remote = JSON.parse(raw);
+    if(remote && typeof remote==='object'){
+      if(Array.isArray(remote.cards))   state.cards   = remote.cards;
+      if(Array.isArray(remote.members)) state.members = remote.members;
+      if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
     }
-  } catch{}
+    render();
+    setStatus('ok','Обновлено');
+  } catch(e){ console.warn('syncPull:', e); }
 }
 
-// persist немедленно (важные действия: дедлайн, drag, создание)
 async function persist(){
-  if(!cfg) return;
+  if(!cfg || !isAdmin()) return; // только admin пишет
   setStatus('saving','Сохранение…');
   const content = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
   try{
-    const res = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`,{
+    const body = {message:`update ${new Date().toISOString()}`, content};
+    if(fileSha) body.sha = fileSha;
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`,{
       method:'PUT',
       headers:{Authorization:`token ${cfg.token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-      body:JSON.stringify({message:`update ${new Date().toISOString()}`,content,...(fileSha?{sha:fileSha}:{})})
+      body:JSON.stringify(body)
     });
     if(res.ok){
-      const d=await res.json(); fileSha=d.content.sha;
-      localStorage.setItem('gamefy_last_save', new Date().toDateString());
+      const d = await res.json();
+      fileSha = d.content.sha;
       setStatus('ok','Синхронизировано');
-    } else { setStatus('error','Ошибка GitHub'); }
+    } else {
+      if(res.status===409){ await syncPull(); await persist(); return; } // conflict
+      setStatus('error','Ошибка сохранения');
+    }
   } catch(e){ setStatus('error','Нет соединения'); }
 }
 
-// dailyPersist — сохраняет в GitHub не чаще 1 раза в день
-function dailyPersist(){
-  if(!cfg) return;
-  const last = localStorage.getItem('gamefy_last_save');
-  const today = new Date().toDateString();
-  if(last !== today){ persist(); }
-  else { saveLocalState(); } // локально всегда
+// ═══════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════
+function setupEvents(){
+  // close by data-close attr
+  document.querySelectorAll('[data-close]').forEach(btn=>{
+    btn.addEventListener('click', ()=>closeOverlay(btn.dataset.close));
+  });
+  // close overlay by bg click
+  document.querySelectorAll('.overlay').forEach(ov=>{
+    ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('open'); });
+  });
+  // ESC
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));
+  });
+
+  // login
+  el('login-btn').addEventListener('click', doLogin);
+  el('login-token').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+  // header
+  el('team-btn').addEventListener('click', openTeamModal);
+  el('gh-settings-btn').addEventListener('click', openGithubModal);
+
+  // card modal
+  el('save-card-btn').addEventListener('click', saveCard);
+  el('delete-card-btn').addEventListener('click', deleteCard);
+  el('subtask-add-btn').addEventListener('click', addSubtask);
+  el('subtask-input').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addSubtask(); } });
+
+  // team modal
+  el('add-member-btn').addEventListener('click', openAddMemberModal);
+  el('save-member-btn').addEventListener('click', saveMember);
+
+  // github modal
+  el('gh-save-btn').addEventListener('click', saveGithubCfg);
+  el('gh-disconnect-btn').addEventListener('click', ()=>{
+    cfg=null; fileSha=null;
+    localStorage.removeItem('gamefy_cfg');
+    if(syncTimer){ clearInterval(syncTimer); syncTimer=null; }
+    closeOverlay('github-overlay');
+    showLoginScreen();
+    toast('Вы вышли');
+  });
+
+  // confirm
+  el('confirm-ok-btn').addEventListener('click', ()=>{
+    closeOverlay('confirm-overlay');
+    if(confirmCb){ confirmCb(); confirmCb=null; }
+  });
+
+  // help
+  el('help-fab').addEventListener('click', ()=>openOverlay('help-overlay'));
+
+  // mobile tabs
+  el('mobile-tabs').addEventListener('click', e=>{
+    const tab = e.target.closest('.mobile-tab');
+    if(!tab) return;
+    activeMobileCol = tab.dataset.col;
+    document.querySelectorAll('.mobile-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    renderBoard();
+  });
 }
 
-// ═══════════════════════════════════════
+function addSubtask(){
+  const inp = el('subtask-input');
+  const v = inp.value.trim();
+  if(!v) return;
+  subtasks.push({t:v, done:false});
+  inp.value='';
+  renderSubtasks();
+  inp.focus();
+}
+
+// ═══════════════════════════════════════════════════════
+// OVERLAY HELPERS
+// ═══════════════════════════════════════════════════════
+function openOverlay(id){ el(id).classList.add('open'); }
+function closeOverlay(id){ el(id).classList.remove('open'); }
+
+function showConfirm(title, text, cb){
+  el('confirm-title').textContent = title;
+  el('confirm-text').textContent  = text;
+  confirmCb = cb;
+  openOverlay('confirm-overlay');
+}
+
+function setStatus(s, text){
+  el('sync-dot').className = 'sync-dot '+s;
+  el('sync-text').textContent = text;
+}
+
+// ═══════════════════════════════════════════════════════
 // UTILS
-// ═══════════════════════════════════════
-function setStatus(state, text){
-  document.getElementById('sync-dot').className = 'sync-dot '+state;
-  document.getElementById('sync-text').textContent = text;
-}
-
-function deadlineClass(dl){
+// ═══════════════════════════════════════════════════════
+function el(id){ return document.getElementById(id); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d){ if(!d) return ''; const [y,m,day]=d.split('-'); return `${day}.${m}.${y}`; }
+function deadlineCls(dl){
   if(!dl) return '';
-  const d = new Date(dl); const now = new Date();
-  const diff = (d-now)/(1000*60*60*24);
-  if(diff < 0) return 'overdue';
-  if(diff < 3) return 'soon';
+  const diff = (new Date(dl)-new Date())/(1000*60*60*24);
+  if(diff<0) return 'overdue';
+  if(diff<3) return 'soon';
   return '';
 }
 
-function formatDate(d){
-  if(!d) return '';
-  const [y,m,day] = d.split('-');
-  return `${day}.${m}.${y}`;
-}
-
-function esc(s){ try{ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }catch(e){return '';} }
-function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-
-let toastTimer = null;
+let toastT = null;
 function toast(msg, type=''){
-  const t = document.getElementById('toast');
+  const t = el('toast');
   t.textContent = msg;
   t.className = 'toast show'+(type?' '+type:'');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.className='toast',2500);
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>t.className='toast', 2500);
 }
 </script>
 </body>
