@@ -1,0 +1,122 @@
+{
+  "cards": [
+    {
+      "id": "mrom0rkdwulz",
+      "title": "Главный экран",
+      "type": "design",
+      "col": "doing",
+      "desc": "Разработать главный экран приложения",
+      "link": "",
+      "subtasks": [
+        {
+          "t": "Wireframe",
+          "done": true
+        },
+        {
+          "t": "Цветовая схема",
+          "done": false
+        },
+        {
+          "t": "Финальный макет",
+          "done": false
+        }
+      ],
+      "assignees": [
+        "mrom0rkdnz08"
+      ],
+      "deadline": "2025-08-10"
+    },
+    {
+      "id": "mrom0rkdc8s7",
+      "title": "API авторизации",
+      "type": "dev",
+      "col": "review",
+      "desc": "Написать endpoint для JWT авторизации",
+      "link": "",
+      "subtasks": [
+        {
+          "t": "Модель User",
+          "done": true
+        },
+        {
+          "t": "JWT middleware",
+          "done": true
+        },
+        {
+          "t": "Тесты",
+          "done": false
+        },
+        {
+          "t": "Тест",
+          "done": false
+        }
+      ],
+      "assignees": [
+        "mrom0rkdnz08",
+        "mrom0rkdiwt8"
+      ],
+      "deadline": "2026-07-22"
+    },
+    {
+      "id": "mrom0rkd19kz",
+      "title": "Онбординг экраны",
+      "type": "design",
+      "col": "done",
+      "desc": "Серия онбординг-экранов",
+      "link": "https://figma.com/example",
+      "subtasks": [
+        {
+          "t": "Экран 1",
+          "done": true
+        },
+        {
+          "t": "Экран 2",
+          "done": true
+        }
+      ],
+      "assignees": [
+        "mrom0rkdnz08"
+      ],
+      "deadline": "2025-07-15"
+    },
+    {
+      "id": "mrom0rkd1ft7",
+      "title": "База данных схема",
+      "type": "dev",
+      "col": "done",
+      "desc": "Проектирование схемы БД",
+      "link": "",
+      "subtasks": [
+        {
+          "t": "ER-диаграмма",
+          "done": true
+        },
+        {
+          "t": "Миграции",
+          "done": true
+        }
+      ],
+      "assignees": [
+        "mrom0rkdiwt8"
+      ],
+      "deadline": "2025-07-01"
+    }
+  ],
+  "members": [
+    {
+      "id": "mrom0rkdnz08",
+      "name": "Анна Кова",
+      "role": "UX/UI Designer",
+      "tg": "https://t.me/anna",
+      "avatar": ""
+    },
+    {
+      "id": "mrom0rkdiwt8",
+      "name": "Сергей М.",
+      "role": "Dev",
+      "tg": "https://t.me/serg",
+      "avatar": ""
+    }
+  ],
+  "doneHistory": 4
+}
