@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>✅</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gamefy Task Manager</title>
 <style>
@@ -470,6 +471,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-text">—</span>
     </div>
+    <button class="btn btn-ghost" id="gh-settings-btn" title="GitHub синхронизация">⚙ GitHub</button>
     <button class="btn btn-ghost" id="team-btn">👥 Команда</button>
     <button class="btn btn-primary" id="add-card-btn">+ Задача</button>
   </div>
@@ -511,6 +513,40 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- ══ MODAL: GITHUB SETTINGS ══ -->
+<div class="overlay" id="github-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Подключение к GitHub</h3>
+      <button class="modal-close" data-close="github-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:4px">
+        Токен хранится только в твоём браузере — в репозиторий не попадает.
+        Все в команде вводят токен у себя.
+      </p>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:4px">
+        Нужен токен с правом <code style="color:var(--accent2)">repo</code>.<br>
+        <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--accent2)">github.com/settings/tokens/new →</a>
+      </div>
+      <div class="field">
+        <label>GitHub Personal Access Token</label>
+        <input type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+      </div>
+      <div class="field">
+        <label>Репозиторий</label>
+        <input type="text" id="gh-repo-input" placeholder="username/gamefy-kanban">
+      </div>
+      <div id="gh-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger-soft btn-sm" id="gh-disconnect-btn" style="display:none;margin-right:auto">Отключить</button>
+      <button class="btn btn-ghost" data-close="github-overlay">Отмена</button>
+      <button class="btn btn-primary" id="gh-save-btn">Подключить</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ MODAL: ADD/EDIT CARD ══ -->
 <div class="overlay" id="card-overlay">
@@ -684,7 +720,7 @@ let state = {
 
 // GitHub config
 let cfg = {
-  token: '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',
+  token: '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',
   repo:  'maximum-studio/gamefy-kanban',
   path:  'kanban-data.json'
 };
@@ -736,8 +772,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   render();
   setupEvents();
-  setStatus('ok','Данные загружены');
-  if(cfg){ syncPull(); }
+  updateGhBtn();
+  if(cfg){ setStatus('ok','Подключено'); syncPull(); }
+  else { setStatus('','Не подключено'); }
 });
 
 // ═══════════════════════════════════════
@@ -862,28 +899,30 @@ function renderMobileTabs(){
 // ═══════════════════════════════════════
 function onDragStart(e){
   dragId = e.currentTarget.dataset.id;
-  setTimeout(()=>e.currentTarget.classList.add('dragging'),0);
+  const el = e.currentTarget;
+  setTimeout(()=>{ if(el && el.isConnected) el.classList.add('dragging'); }, 0);
 }
 function onDragEnd(e){
-  e.currentTarget.classList.remove('dragging');
+  if(e.currentTarget && e.currentTarget.isConnected)
+    e.currentTarget.classList.remove('dragging');
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
 }
 function onDragOver(e){
   e.preventDefault();
-  const col = e.currentTarget.closest('.column');
+  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : null;
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
-  col?.classList.add('drag-over');
+  if(col) col.classList.add('drag-over');
 }
 function onDragLeave(e){
-  if(!e.currentTarget.closest('.column')?.contains(e.relatedTarget)){
-    e.currentTarget.closest('.column')?.classList.remove('drag-over');
-  }
+  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : null;
+  if(col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
 }
 function onDrop(e){
   e.preventDefault();
-  const colId = e.currentTarget.closest('.column')?.dataset.col;
-  if(colId && dragId) moveCardToCol(dragId, colId);
+  const col = e.currentTarget.closest ? e.currentTarget.closest('.column') : e.currentTarget;
+  const colId = col ? col.dataset.col : null;
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
+  if(colId && dragId) moveCardToCol(dragId, colId);
   dragId = null;
 }
 
@@ -1110,6 +1149,18 @@ function setupEvents(){
 
   document.getElementById('help-fab').addEventListener('click', ()=>openOverlay('help-overlay'));
 
+  // GitHub settings
+  document.getElementById('gh-settings-btn').addEventListener('click', openGithubModal);
+  document.getElementById('gh-save-btn').addEventListener('click', saveGithubCfg);
+  document.getElementById('gh-disconnect-btn').addEventListener('click', ()=>{
+    cfg = null; fileSha = null;
+    localStorage.removeItem('gamefy_cfg');
+    closeOverlay('github-overlay');
+    setStatus('','Не подключено');
+    toast('GitHub отключён');
+    updateGhBtn();
+  });
+
   // subtask add
   document.getElementById('subtask-add-btn').addEventListener('click', addSubtask);
   document.getElementById('subtask-input').addEventListener('keydown', e=>{
@@ -1142,6 +1193,71 @@ function addSubtask(){
   inp.value = '';
   renderSubtasks();
   inp.focus();
+}
+
+// ═══════════════════════════════════════
+// GITHUB MODAL
+// ═══════════════════════════════════════
+function openGithubModal(){
+  const errEl = document.getElementById('gh-error');
+  errEl.style.display = 'none';
+  document.getElementById('gh-token-input').value = cfg?.token || '';
+  document.getElementById('gh-repo-input').value  = cfg?.repo  || '';
+  document.getElementById('gh-disconnect-btn').style.display = cfg ? '' : 'none';
+  openOverlay('github-overlay');
+  setTimeout(()=>document.getElementById('gh-token-input').focus(), 150);
+}
+
+async function saveGithubCfg(){
+  const token = document.getElementById('gh-token-input').value.trim();
+  const repo  = document.getElementById('gh-repo-input').value.trim();
+  const errEl = document.getElementById('gh-error');
+  errEl.style.display = 'none';
+
+  if(!token || !repo){
+    errEl.textContent = 'Заполни токен и репозиторий';
+    errEl.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('gh-save-btn');
+  btn.textContent = 'Проверяем…'; btn.disabled = true;
+
+  try{
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/kanban-data.json`,{
+      headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
+    });
+    if(res.status === 401) throw new Error('Токен неверный или истёк');
+    if(res.status !== 404 && !res.ok) throw new Error('GitHub ответил: ' + res.status);
+
+    cfg = {token, repo, path:'kanban-data.json'};
+    saveCfg(cfg);
+    fileSha = null;
+
+    if(res.ok){
+      const data = await res.json();
+      fileSha = data.sha;
+      const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
+      state = {...state,...remote};
+      render();
+    }
+
+    closeOverlay('github-overlay');
+    setStatus('ok','Подключено');
+    toast('GitHub подключён','ok');
+    updateGhBtn();
+    persist();
+  } catch(e){
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  } finally{
+    btn.textContent = 'Подключить'; btn.disabled = false;
+  }
+}
+
+function updateGhBtn(){
+  const btn = document.getElementById('gh-settings-btn');
+  btn.textContent = cfg ? '✓ GitHub' : '⚙ GitHub';
+  btn.style.color = cfg ? 'var(--dev)' : '';
 }
 
 // ═══════════════════════════════════════
