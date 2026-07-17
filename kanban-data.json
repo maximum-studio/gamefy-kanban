@@ -1,5 +1,17 @@
 {
-  "cards": [],
+  "cards": [
+    {
+      "id": "mrpd6o0oesc0",
+      "title": "задача 1",
+      "link": "",
+      "type": "",
+      "col": "todo",
+      "desc": "",
+      "deadline": "",
+      "subtasks": [],
+      "assignees": []
+    }
+  ],
   "members": [
     {
       "id": "mrpctf5g9yyy",
