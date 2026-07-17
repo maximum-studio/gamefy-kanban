@@ -1200,16 +1200,21 @@ function setupEvents(){
 
   document.getElementById('help-fab').addEventListener('click', ()=>openOverlay('help-overlay'));
 
-  // GitHub settings
+  // Login screen
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-token').addEventListener('keydown', e=>{
+    if(e.key==='Enter') doLogin();
+  });
+
+  // GitHub settings (смена токена / выход)
   document.getElementById('gh-settings-btn').addEventListener('click', openGithubModal);
   document.getElementById('gh-save-btn').addEventListener('click', saveGithubCfg);
   document.getElementById('gh-disconnect-btn').addEventListener('click', ()=>{
     cfg = null; fileSha = null;
     localStorage.removeItem('gamefy_cfg');
     closeOverlay('github-overlay');
-    setStatus('','Не подключено');
-    toast('GitHub отключён');
-    updateGhBtn();
+    showLoginScreen();
+    toast('Вы вышли');
   });
 
   // subtask add
@@ -1247,61 +1252,98 @@ function addSubtask(){
 }
 
 // ═══════════════════════════════════════
-// GITHUB MODAL
+// ВХОД
+// ═══════════════════════════════════════
+async function doLogin(){
+  const token = document.getElementById('login-token').value.trim();
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  if(!token){ errEl.textContent='Введи токен'; errEl.style.display='block'; return; }
+  btn.textContent='Проверяем…'; btn.disabled=true;
+  try{
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/kanban-data.json`,{
+      headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
+    });
+    if(res.status===401) throw new Error('Токен неверный или не существует');
+    if(res.status===403) throw new Error('Нет доступа к репозиторию');
+    const role = await detectRole(token);
+    cfg = {token, repo:REPO, path:'kanban-data.json', role};
+    saveCfg(cfg);
+    if(res.ok){
+      const data = await res.json();
+      fileSha = data.sha;
+      const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
+      if(remote && typeof remote==='object'){
+        if(Array.isArray(remote.cards)) state.cards = remote.cards;
+        if(Array.isArray(remote.members)) state.members = remote.members;
+        if(typeof remote.doneHistory==='number') state.doneHistory = remote.doneHistory;
+      }
+    }
+    showBoard();
+    toast('Добро пожаловать! Роль: '+(role==='admin'?'Администратор 👑':'Участник команды 👋'),'ok');
+  } catch(e){
+    errEl.textContent=e.message;
+    errEl.style.display='block';
+    btn.textContent='Войти'; btn.disabled=false;
+  }
+}
+
+async function detectRole(token){
+  try{
+    const testPath='.role-check-tmp';
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${testPath}`,{
+      method:'PUT',
+      headers:{Authorization:`token ${token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+      body:JSON.stringify({message:'role check',content:btoa('test')})
+    });
+    if(res.ok){
+      const d=await res.json();
+      fetch(`https://api.github.com/repos/${REPO}/contents/${testPath}`,{
+        method:'DELETE',
+        headers:{Authorization:`token ${token}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
+        body:JSON.stringify({message:'role check cleanup',sha:d.content.sha})
+      }).catch(()=>{});
+      return 'admin';
+    }
+  } catch{}
+  return 'viewer';
+}
+
+// ═══════════════════════════════════════
+// GITHUB MODAL (смена токена)
 // ═══════════════════════════════════════
 function openGithubModal(){
-  const errEl = document.getElementById('gh-error');
-  errEl.style.display = 'none';
-  document.getElementById('gh-token-input').value = cfg?.token || '';
-  document.getElementById('gh-repo-input').value  = cfg?.repo  || '';
-  document.getElementById('gh-disconnect-btn').style.display = cfg ? '' : 'none';
+  document.getElementById('gh-error').style.display = 'none';
+  document.getElementById('gh-token-input').value = '';
+  const lbl = document.getElementById('current-role-label');
+  if(lbl) lbl.textContent = isAdmin() ? 'Администратор 👑' : 'Участник команды';
   openOverlay('github-overlay');
   setTimeout(()=>document.getElementById('gh-token-input').focus(), 150);
 }
 
 async function saveGithubCfg(){
   const token = document.getElementById('gh-token-input').value.trim();
-  const repo  = document.getElementById('gh-repo-input').value.trim();
   const errEl = document.getElementById('gh-error');
   errEl.style.display = 'none';
-
-  if(!token || !repo){
-    errEl.textContent = 'Заполни токен и репозиторий';
-    errEl.style.display = 'block'; return;
-  }
-
+  if(!token){ errEl.textContent='Введи токен'; errEl.style.display='block'; return; }
   const btn = document.getElementById('gh-save-btn');
-  btn.textContent = 'Проверяем…'; btn.disabled = true;
-
+  btn.textContent='Проверяем…'; btn.disabled=true;
   try{
-    const res = await fetch(`https://api.github.com/repos/${repo}/contents/kanban-data.json`,{
+    const res = await fetch(`https://api.github.com/repos/${REPO}/contents/kanban-data.json`,{
       headers:{Authorization:`token ${token}`,Accept:'application/vnd.github.v3+json'}
     });
-    if(res.status === 401) throw new Error('Токен неверный или истёк');
-    if(res.status !== 404 && !res.ok) throw new Error('GitHub ответил: ' + res.status);
-
-    cfg = {token, repo, path:'kanban-data.json'};
+    if(res.status===401) throw new Error('Токен неверный или истёк');
+    const role = await detectRole(token);
+    cfg = {token, repo:REPO, path:'kanban-data.json', role};
     saveCfg(cfg);
-    fileSha = null;
-
-    if(res.ok){
-      const data = await res.json();
-      fileSha = data.sha;
-      const remote = JSON.parse(atob(data.content.replace(/\n/g,'')));
-      state = {...state,...remote};
-      render();
-    }
-
     closeOverlay('github-overlay');
-    setStatus('ok','Подключено');
-    toast('GitHub подключён','ok');
     updateGhBtn();
-    persist();
+    toast('Токен обновлён, роль: '+(role==='admin'?'Администратор':'Участник'),'ok');
   } catch(e){
-    errEl.textContent = e.message;
-    errEl.style.display = 'block';
+    errEl.textContent=e.message; errEl.style.display='block';
   } finally{
-    btn.textContent = 'Подключить'; btn.disabled = false;
+    btn.textContent='Сохранить'; btn.disabled=false;
   }
 }
 
