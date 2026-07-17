@@ -2,6 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gamefy Task Manager</title>
 <style>
@@ -776,6 +779,14 @@ function isAdmin(){ return cfg && cfg.role === 'admin'; }
 // ═══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   try {
+    // Сброс старого кэша при обновлении версии
+    const APP_VERSION = '2.1';
+    if(localStorage.getItem('gamefy_version') !== APP_VERSION){
+      const savedCfg = localStorage.getItem('gamefy_cfg'); // токен сохраняем
+      localStorage.clear();
+      if(savedCfg) localStorage.setItem('gamefy_cfg', savedCfg);
+      localStorage.setItem('gamefy_version', APP_VERSION);
+    }
     const saved = loadLocal();
     if(saved && typeof saved === 'object'){
       if(Array.isArray(saved.cards))   state.cards   = saved.cards;
@@ -821,8 +832,11 @@ function showBoard(){
   render();
 
   if(cfg){
+    setStatus('saving', 'Загрузка…');
     syncPull();
     if(!syncTimer) syncTimer = setInterval(syncPull, 5*60*1000);
+  } else {
+    setStatus('', 'Нет соединения');
   }
 }
 
@@ -1163,6 +1177,7 @@ async function doLogin(){
     // 404 — файла нет, начинаем с чистой доски, это нормально
 
     showBoard();
+    setStatus('ok', isAdmin() ? 'Администратор 👑' : 'Участник 👋');
     toast('Добро пожаловать! Роль: '+(role==='admin'?'Администратор 👑':'Участник 👋'),'ok');
   } catch(e){
     errEl.textContent = e.message;
