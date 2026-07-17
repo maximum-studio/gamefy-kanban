@@ -1,24 +1,5 @@
 {
-  "cards": [
-    {
-      "id": "mrpcvpen0zo3",
-      "title": "ÐÐ¾Ð²Ð°Ñ ÐÐ°ÑÑÐ¾ÑÐºÐ°",
-      "link": "",
-      "type": "design",
-      "col": "done",
-      "desc": "",
-      "deadline": "2026-12-17",
-      "subtasks": [
-        {
-          "t": "ÐÐ¾Ð´Ð·Ð°Ð´Ð°ÑÐ°",
-          "done": true
-        }
-      ],
-      "assignees": [
-        "mrpctf5g9yyy"
-      ]
-    }
-  ],
+  "cards": [],
   "members": [
     {
       "id": "mrpctf5g9yyy",
