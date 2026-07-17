@@ -100,6 +100,17 @@
         "mrom0rkdiwt8"
       ],
       "deadline": "2025-07-01"
+    },
+    {
+      "id": "mrozq02t3xp2",
+      "title": "ноовая карточка",
+      "link": "",
+      "type": "",
+      "col": "todo",
+      "desc": "",
+      "deadline": "",
+      "subtasks": [],
+      "assignees": []
     }
   ],
   "members": [
