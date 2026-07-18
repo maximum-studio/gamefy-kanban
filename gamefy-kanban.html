@@ -516,6 +516,111 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- ══ MODAL: ADD/EDIT CARD ══ -->
+<div class="overlay" id="card-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="card-modal-title">Новая задача</h3>
+      <button class="modal-close" data-close="card-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Заголовок</label>
+        <input type="text" id="f-title" placeholder="Название задачи">
+      </div>
+      <div class="field">
+        <label>Ссылка на макет</label>
+        <input type="url" id="f-link" placeholder="https://figma.com/...  (необязательно)">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Тип задачи</label>
+          <select id="f-type">
+            <option value="">— не выбрано —</option>
+            <option value="design">Дизайн</option>
+            <option value="dev">Разработка</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Колонка</label>
+          <select id="f-col">
+            <option value="todo">Tasks</option>
+            <option value="doing">Doing</option>
+            <option value="review">Review</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Описание</label>
+        <textarea id="f-desc" placeholder="Детали, контекст, ссылки…"></textarea>
+      </div>
+      <div class="field">
+        <label>Подзадачи</label>
+        <div class="subtasks-list" id="subtasks-list"></div>
+        <div class="add-subtask-row">
+          <input type="text" class="add-subtask-input" id="subtask-input" placeholder="Добавить подзадачу…">
+          <button class="btn btn-ghost btn-sm" id="subtask-add-btn">+ Добавить</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Исполнители</label>
+        <div class="assignee-picker" id="assignee-picker"></div>
+      </div>
+      <div class="field">
+        <label>Дедлайн</label>
+        <input type="date" id="f-deadline">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger-soft" id="delete-card-btn" style="display:none;margin-right:auto">🗑 Удалить</button>
+      <button class="btn btn-ghost" data-close="card-overlay">Отмена</button>
+      <button class="btn btn-primary" id="save-card-btn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: TEAM ══ -->
+<div class="overlay" id="team-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Команда</h3>
+      <button class="modal-close" data-close="team-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="team-list" id="team-list"></div>
+      <button class="btn btn-ghost" id="add-member-btn" style="width:100%;justify-content:center;margin-top:8px">+ Добавить участника</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADD MEMBER ══ -->
+<div class="overlay" id="add-member-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="add-member-title">Новый участник</h3>
+      <button class="modal-close" data-close="add-member-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Имя</label><input type="text" id="m-name" placeholder="Иван Петров"></div>
+      <div class="field"><label>Ссылка на Telegram</label><input type="url" id="m-tg" placeholder="https://t.me/username"></div>
+      <div class="field">
+        <label>Роль</label>
+        <select id="m-role">
+          <option value="UX/UI Designer">UX/UI Designer</option>
+          <option value="Dev">Dev</option>
+        </select>
+      </div>
+      <div class="field"><label>Аватарка (URL)</label><input type="url" id="m-avatar" placeholder="https://... (необязательно)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="add-member-overlay">Отмена</button>
+      <button class="btn btn-primary" id="save-member-btn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- ══ MODAL: НАСТРОЙКИ (для вошедших) ══ -->
 <div class="overlay" id="github-overlay">
   <div class="modal modal-sm">
