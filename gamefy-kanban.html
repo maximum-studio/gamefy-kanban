@@ -516,139 +516,35 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- ══ ЭКРАН ВХОДА (поверх всего, не overlay) ══ -->
-<div id="login-screen" style="
-  position:fixed;inset:0;z-index:999;
-  background:var(--bg);
-  display:flex;align-items:center;justify-content:center;padding:24px;
-">
-  <div style="
-    background:var(--surface);border:1px solid var(--border2);
-    border-radius:var(--r-lg);width:100%;max-width:420px;
-    box-shadow:0 24px 64px rgba(0,0,0,.7);overflow:hidden;
-  ">
-    <div style="padding:28px 28px 20px;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-        <div style="width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">🎮</div>
-        <div style="font-size:18px;font-weight:700"><span style="color:var(--accent)">Gamefy</span> Task Manager</div>
-      </div>
-      <div style="font-size:13px;color:var(--muted);margin-top:8px">Введи токен для входа. Он хранится только в твоём браузере.</div>
-    </div>
-    <div style="padding:24px 28px;display:flex;flex-direction:column;gap:16px">
-      <div class="field">
-        <label>GitHub Personal Access Token</label>
-        <input type="password" id="login-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="font-size:14px">
-      </div>
-      <div id="login-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px;line-height:1.5"></div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.6">
-        💡 Токен выдаёт администратор. Нужен доступ — напиши в Telegram.
-      </div>
-      <button class="btn btn-primary" id="login-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px">
-        Войти
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL: СМЕНА ТОКЕНА (для вошедших) ══ -->
+<!-- ══ MODAL: НАСТРОЙКИ (для вошедших) ══ -->
 <div class="overlay" id="github-overlay">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <h3>Настройки входа</h3>
+      <h3 id="login-modal-title">Вход в Gamefy</h3>
       <button class="modal-close" data-close="github-overlay">✕</button>
     </div>
     <div class="modal-body">
-      <div style="font-size:13px;color:var(--muted);line-height:1.6">
+      <div id="login-welcome" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.6">
+        Введи ключ доступа который выдал администратор.<br>
+        Ключ сохранится в браузере — больше вводить не придётся.
+      </div>
+      <div id="login-role-info" style="display:none;font-size:13px;color:var(--muted);line-height:1.6">
         Текущая роль: <strong id="current-role-label" style="color:var(--accent2)">—</strong>
       </div>
       <div class="field">
-        <label>Сменить токен</label>
-        <input type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        <label id="bin-id-label">BIN ID (выдаёт администратор)</label>
+        <input type="text" id="gh-bin-id" placeholder="6642f3abc123...">
+      </div>
+      <div class="field">
+        <label>Ключ доступа</label>
+        <input type="password" id="gh-token-input" placeholder="$2b$10$...">
       </div>
       <div id="gh-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger-soft btn-sm" id="gh-disconnect-btn" style="margin-right:auto">Выйти</button>
-      <button class="btn btn-ghost" data-close="github-overlay">Отмена</button>
-      <button class="btn btn-primary" id="gh-save-btn">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL: ADD/EDIT CARD ══ -->
-<div class="overlay" id="card-overlay">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <h3 id="card-modal-title">Новая задача</h3>
-      <button class="modal-close" data-close="card-overlay">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="field">
-        <label>Заголовок</label>
-        <input type="text" id="f-title" placeholder="Название задачи">
-      </div>
-      <div class="field">
-        <label>Ссылка на макет</label>
-        <input type="url" id="f-link" placeholder="https://figma.com/...  (необязательно)">
-      </div>
-      <div class="row-2">
-        <div class="field">
-          <label>Тип задачи</label>
-          <select id="f-type">
-            <option value="">— не выбрано —</option>
-            <option value="design">Дизайн</option>
-            <option value="dev">Разработка</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Колонка</label>
-          <select id="f-col">
-            <option value="todo">Tasks</option>
-            <option value="doing">Doing</option>
-            <option value="review">Review</option>
-            <option value="done">Done</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label>Описание</label>
-        <textarea id="f-desc" placeholder="Детали, контекст, ссылки…"></textarea>
-      </div>
-      <div class="field">
-        <label>Подзадачи</label>
-        <div class="subtasks-list" id="subtasks-list"></div>
-        <div class="add-subtask-row">
-          <input type="text" class="add-subtask-input" id="subtask-input" placeholder="Добавить подзадачу…">
-          <button class="btn btn-ghost btn-sm" id="subtask-add-btn">+ Добавить</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Исполнители</label>
-        <div class="assignee-picker" id="assignee-picker"></div>
-      </div>
-      <div class="field">
-        <label>Дедлайн</label>
-        <input type="date" id="f-deadline">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger-soft" id="delete-card-btn" style="display:none;margin-right:auto">🗑 Удалить</button>
-      <button class="btn btn-ghost" data-close="card-overlay">Отмена</button>
-      <button class="btn btn-primary" id="save-card-btn">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL: TEAM ══ -->
-<div class="overlay" id="team-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Команда</h3>
-      <button class="modal-close" data-close="team-overlay">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="team-list" id="team-list"></div>
-      <button class="btn btn-ghost" id="add-member-btn" style="width:100%;justify-content:center;display:none" id="add-member-btn">+ Добавить участника</button>
+      <button class="btn btn-danger-soft btn-sm" id="gh-disconnect-btn" style="display:none;margin-right:auto">Выйти</button>
+      <button class="btn btn-ghost" data-close="github-overlay" id="login-cancel-btn" style="display:none">Отмена</button>
+      <button class="btn btn-primary" id="gh-save-btn">Войти</button>
     </div>
   </div>
 </div>
@@ -732,11 +628,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 'use strict';
 
 // ═══════════════════════════════════════════════════════
-// CONFIG — вставь свои ключи JSONBin после регистрации
+// CONFIG — всё хранится в localStorage, ничего в коде
 // ═══════════════════════════════════════════════════════
-const BIN_ID      = '6a5b251bda38895dfe6e15f2';       // ID бина (из URL после создания)
-const ADMIN_KEY   = '$2a$10$AOQBhIQWXlRe/Ds569Qb8eoToBYroV1leAYz0Tl6MpZC6qkbrrEx6';    // Master Key — только у тебя
-const VIEWER_KEY  = '$2a$10$jlu7axWoFu4TJ6oYwJfnK.mg1JiTjxJAv33H8vuzynojQhuptHhbe';    // Access Key — даёшь команде
+const APP_VERSION = '5.0';
 
 const COLS = [
   {id:'todo',   label:'Tasks',  color:'#7C5CFC'},
@@ -749,15 +643,19 @@ const COLS = [
 // STATE
 // ═══════════════════════════════════════════════════════
 let state = { cards:[], members:[], doneHistory:0 };
-let cfg   = null;  // {key, role}
+
+// cfg хранится в localStorage:
+// { binId, masterKey, accessKey, role }
+// role = 'admin' если вошёл с masterKey, 'viewer' если с accessKey
+let cfg = null;
+
 let dragId = null;
 let editingCardId = null;
 let editingMemberId = null;
-let confirmCb  = null;
+let confirmCb = null;
 let activeMobileCol = 'todo';
-let subtasks   = [];
-let syncTimer  = null;
-let isSaving   = false;
+let subtasks = [];
+let isSaving = false;
 
 // ═══════════════════════════════════════════════════════
 // STORAGE
@@ -779,7 +677,7 @@ function isAdmin(){ return cfg && cfg.role === 'admin'; }
 // ═══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   try {
-    const APP_VERSION = '3.0';
+    // Сброс кэша при смене версии
     if(localStorage.getItem('gamefy_version') !== APP_VERSION){
       const savedCfg = localStorage.getItem('gamefy_cfg');
       localStorage.clear();
@@ -787,16 +685,24 @@ window.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('gamefy_version', APP_VERSION);
     }
 
+    // Загружаем локальный кэш доски
     const saved = loadLocal();
     if(saved && typeof saved === 'object'){
-      if(Array.isArray(saved.cards))   state.cards   = saved.cards;
-      if(Array.isArray(saved.members)) state.members = saved.members;
+      if(Array.isArray(saved.cards))            state.cards       = saved.cards;
+      if(Array.isArray(saved.members))          state.members     = saved.members;
       if(typeof saved.doneHistory === 'number') state.doneHistory = saved.doneHistory;
     }
 
     cfg = loadCfg();
     setupEvents();
-    if(cfg){ showBoard(); } else { showLoginScreen(); }
+
+    if(cfg){
+      showBoard();
+    } else {
+      showLoginModal(true); // первый вход — модалка не закрывается крестиком
+      renderBoard();        // показываем пустую доску за модалкой
+      renderStats();
+    }
 
   } catch(e){
     console.error('Boot error:', e);
@@ -807,17 +713,37 @@ window.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════
 // SCREENS
 // ═══════════════════════════════════════════════════════
-function showLoginScreen(){
-  el('login-screen').style.display = 'flex';
-  el('board-wrap').style.display   = 'none';
-  setTimeout(() => el('login-token') && el('login-token').focus(), 100);
+function showLoginModal(isFirst=false){
+  el('login-modal-title').textContent = isFirst ? 'Добро пожаловать 👋' : 'Настройки входа';
+  el('login-welcome').style.display   = isFirst ? '' : 'none';
+  el('login-role-info').style.display = isFirst ? 'none' : '';
+  el('login-cancel-btn').style.display = isFirst ? 'none' : '';
+  el('gh-disconnect-btn').style.display = (cfg && !isFirst) ? '' : 'none';
+
+  // Если уже входили — показываем bin id и роль
+  if(cfg){
+    el('gh-bin-id').value = cfg.binId || '';
+    el('current-role-label').textContent = isAdmin() ? 'Администратор 👑' : 'Участник команды';
+  } else {
+    el('gh-bin-id').value = '';
+  }
+  el('gh-token-input').value = '';
+  el('gh-error').style.display = 'none';
+  el('gh-save-btn').textContent = isFirst ? 'Войти' : 'Сохранить';
+
+  openOverlay('github-overlay');
+  setTimeout(()=>{
+    const f = !cfg || !el('gh-bin-id').value
+      ? el('gh-bin-id')
+      : el('gh-token-input');
+    f.focus();
+  }, 150);
 }
 
 function showBoard(){
-  el('login-screen').style.display = 'none';
-  el('board-wrap').style.display   = '';
   updateGhBtn();
 
+  // Демо-данные если пусто
   if(!state.members.length){
     state.members = [
       {id:uid(), name:'Анна К.',   role:'UX/UI Designer', tg:'https://t.me/anna', avatar:''},
@@ -826,16 +752,14 @@ function showBoard(){
   }
   if(!state.cards.length){
     state.cards = [
-      {id:uid(),title:'Главный экран',   type:'design',col:'todo', desc:'',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цвета',done:false}],assignees:[state.members[0].id],deadline:'2025-08-10'},
-      {id:uid(),title:'API авторизации', type:'dev',   col:'doing',desc:'',link:'',subtasks:[{t:'Модель User',done:true},{t:'Тесты',done:false}],assignees:[state.members[1].id],deadline:'2025-07-20'},
+      {id:uid(),title:'Главный экран',   type:'design',col:'todo', desc:'Разработать главный экран',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цвета',done:false}],  assignees:[state.members[0].id],deadline:'2025-08-10'},
+      {id:uid(),title:'API авторизации', type:'dev',   col:'doing',desc:'Endpoint для JWT',         link:'',subtasks:[{t:'User модель',done:true},{t:'Тесты',done:false}],assignees:[state.members[1].id],deadline:'2025-07-20'},
     ];
   }
 
-  setStatus('saving','Загрузка…');
   render();
-  syncPull().then(()=>{
-    if(!syncTimer) syncTimer = setInterval(syncPull, 30*1000); // каждые 30 сек
-  });
+  setStatus('saving','Загрузка…');
+  syncPull();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -985,11 +909,11 @@ function openCardModal(id=null, colId='todo'){
   const c = id ? state.cards.find(x=>x.id===id) : null;
   el('card-modal-title').textContent = id ? 'Редактировать задачу' : 'Новая задача';
   el('delete-card-btn').style.display = (id && isAdmin()) ? '' : 'none';
-  el('f-title').value    = c ? c.title     : '';
-  el('f-link').value     = c ? c.link||''  : '';
-  el('f-type').value     = c ? c.type||''  : '';
-  el('f-col').value      = c ? c.col       : colId;
-  el('f-desc').value     = c ? c.desc||''  : '';
+  el('f-title').value    = c ? c.title      : '';
+  el('f-link').value     = c ? c.link||''   : '';
+  el('f-type').value     = c ? c.type||''   : '';
+  el('f-col').value      = c ? c.col        : colId;
+  el('f-desc').value     = c ? c.desc||''   : '';
   el('f-deadline').value = c ? c.deadline||'' : '';
   subtasks = c && c.subtasks ? JSON.parse(JSON.stringify(c.subtasks)) : [];
   renderSubtasks();
@@ -1061,9 +985,7 @@ function deleteCard(){
   showConfirm('Удалить задачу?', `«${title}» будет удалена безвозвратно.`, ()=>{
     state.cards = state.cards.filter(c=>c.id!==editingCardId);
     closeOverlay('card-overlay');
-    render();
-    persist();
-    toast('Удалено');
+    render(); persist(); toast('Удалено');
   });
 }
 
@@ -1079,7 +1001,7 @@ function openTeamModal(){
 function renderTeamList(){
   const list = el('team-list');
   if(!state.members.length){
-    list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Команда пуста</div>';
+    list.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Команда пуста</div>';
     return;
   }
   list.innerHTML = state.members.map(m=>{
@@ -1095,23 +1017,20 @@ function renderTeamList(){
     </div>`;
   }).join('');
   list.querySelectorAll('.team-del').forEach(btn=>{
-    btn.addEventListener('click', e=>{
+    btn.addEventListener('click',e=>{
       e.stopPropagation();
-      const m = state.members.find(x=>x.id===btn.dataset.id);
+      const m=state.members.find(x=>x.id===btn.dataset.id);
       showConfirm('Удалить участника?',`«${m?.name||''}» будет удалён.`,()=>{
-        state.members = state.members.filter(x=>x.id!==btn.dataset.id);
+        state.members=state.members.filter(x=>x.id!==btn.dataset.id);
         state.cards.forEach(c=>{ c.assignees=(c.assignees||[]).filter(a=>a!==btn.dataset.id); });
-        renderTeamList();
-        saveLocal();
-        persist();
-        toast('Участник удалён');
+        renderTeamList(); saveLocal(); persist(); toast('Участник удалён');
       });
     });
   });
 }
 
 function openAddMemberModal(){
-  editingMemberId = null;
+  editingMemberId=null;
   el('m-name').value=''; el('m-tg').value='';
   el('m-role').value='UX/UI Designer'; el('m-avatar').value='';
   openOverlay('add-member-overlay');
@@ -1119,19 +1038,17 @@ function openAddMemberModal(){
 }
 
 function saveMember(){
-  const name = el('m-name').value.trim();
+  const name=el('m-name').value.trim();
   if(!name){ el('m-name').focus(); return; }
-  const data = { name, tg:el('m-tg').value.trim(), role:el('m-role').value, avatar:el('m-avatar').value.trim() };
+  const data={name, tg:el('m-tg').value.trim(), role:el('m-role').value, avatar:el('m-avatar').value.trim()};
   if(editingMemberId){
-    const idx = state.members.findIndex(m=>m.id===editingMemberId);
-    state.members[idx] = {...state.members[idx],...data};
+    const idx=state.members.findIndex(m=>m.id===editingMemberId);
+    state.members[idx]={...state.members[idx],...data};
   } else {
     state.members.push({id:uid(),...data});
   }
   closeOverlay('add-member-overlay');
-  renderTeamList();
-  saveLocal();
-  persist();
+  renderTeamList(); saveLocal(); persist();
   toast('Участник сохранён','ok');
 }
 
@@ -1139,47 +1056,76 @@ function saveMember(){
 // LOGIN
 // ═══════════════════════════════════════════════════════
 async function doLogin(){
-  const key   = el('login-token').value.trim();
-  const errEl = el('login-error');
-  const btn   = el('login-btn');
+  const binId = el('gh-bin-id').value.trim();
+  const key   = el('gh-token-input').value.trim();
+  const errEl = el('gh-error');
+  const btn   = el('gh-save-btn');
   errEl.style.display = 'none';
+
+  // Если уже залогинен и меняет только ключ — bin id берём из cfg
+  const effectiveBinId = binId || cfg?.binId;
+
+  if(!effectiveBinId){ errEl.textContent='Введи BIN ID'; errEl.style.display='block'; return; }
   if(!key){ errEl.textContent='Введи ключ доступа'; errEl.style.display='block'; return; }
 
   btn.textContent='Проверяем…'; btn.disabled=true;
 
   try{
-    // Проверяем ключ — пробуем прочитать бин
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{
-      headers:{'X-Master-Key': key, 'X-Access-Key': key}
+    // Пробуем прочитать бин с этим ключом
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${effectiveBinId}/latest`,{
+      headers:{ 'X-Master-Key': key, 'X-Access-Key': key }
     });
 
-    if(res.status===401 || res.status===403) throw new Error('Ключ неверный — проверь и попробуй ещё раз');
-    if(res.status===404) throw new Error('Бин не найден — проверь BIN_ID в коде');
+    if(res.status===401 || res.status===403) throw new Error('Ключ неверный — проверь и попробуй снова');
+    if(res.status===404) throw new Error('BIN ID не найден — проверь правильность');
     if(!res.ok) throw new Error('Ошибка сервера: ' + res.status);
 
-    // Определяем роль: Master Key = admin, Access Key = viewer
-    const role = (key === ADMIN_KEY) ? 'admin' : 'viewer';
-    cfg = {key, role};
+    const data = await res.json();
+
+    // Определяем роль: пробуем записать (только master key это может)
+    const role = await detectRole(effectiveBinId, key, data.record);
+
+    // Если ключ дал доступ на запись — сохраняем его как masterKey тоже
+    cfg = {
+      binId: effectiveBinId,
+      masterKey: role==='admin' ? key : (cfg?.masterKey||''),
+      accessKey: key,
+      role
+    };
     saveCfg(cfg);
 
-    // Загружаем данные
-    const data = await res.json();
+    // Загружаем данные из бина
     const remote = data.record;
-    if(remote && typeof remote === 'object'){
-      if(Array.isArray(remote.cards))          state.cards       = remote.cards;
-      if(Array.isArray(remote.members))        state.members     = remote.members;
-      if(typeof remote.doneHistory === 'number') state.doneHistory = remote.doneHistory;
+    if(remote && typeof remote==='object'){
+      if(Array.isArray(remote.cards))            state.cards       = remote.cards;
+      if(Array.isArray(remote.members))          state.members     = remote.members;
+      if(typeof remote.doneHistory==='number')   state.doneHistory = remote.doneHistory;
     }
 
+    closeOverlay('github-overlay');
     showBoard();
-    toast('Добро пожаловать! ' + (role==='admin'?'Администратор 👑':'Участник команды 👋'), 'ok');
+    toast('Вход выполнен: '+(role==='admin'?'Администратор 👑':'Участник команды 👋'), 'ok');
 
   } catch(e){
     errEl.textContent = e.message;
     errEl.style.display = 'block';
   } finally{
-    btn.textContent='Войти'; btn.disabled=false;
+    btn.textContent = cfg ? 'Сохранить' : 'Войти';
+    btn.disabled = false;
   }
+}
+
+async function detectRole(binId, key, currentData){
+  // Пробуем записать — если получится, роль admin
+  try{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`,{
+      method: 'PUT',
+      headers:{ 'Content-Type':'application/json', 'X-Master-Key': key },
+      body: JSON.stringify(currentData || {cards:[],members:[],doneHistory:0})
+    });
+    if(res.ok) return 'admin';
+  } catch{}
+  return 'viewer';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1188,16 +1134,16 @@ async function doLogin(){
 async function syncPull(){
   if(!cfg) return;
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{
-      headers:{'X-Master-Key': cfg.key, 'X-Access-Key': cfg.key}
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}/latest`,{
+      headers:{ 'X-Master-Key': cfg.masterKey||cfg.accessKey, 'X-Access-Key': cfg.accessKey }
     });
-    if(!res.ok) return;
+    if(!res.ok){ setStatus('error','Ошибка соединения'); return; }
     const data = await res.json();
     const remote = data.record;
-    if(remote && typeof remote === 'object'){
-      if(Array.isArray(remote.cards))          state.cards       = remote.cards;
-      if(Array.isArray(remote.members))        state.members     = remote.members;
-      if(typeof remote.doneHistory === 'number') state.doneHistory = remote.doneHistory;
+    if(remote && typeof remote==='object'){
+      if(Array.isArray(remote.cards))            state.cards       = remote.cards;
+      if(Array.isArray(remote.members))          state.members     = remote.members;
+      if(typeof remote.doneHistory==='number')   state.doneHistory = remote.doneHistory;
     }
     render();
     setStatus('ok','Синхронизировано');
@@ -1207,24 +1153,20 @@ async function syncPull(){
 }
 
 async function persist(){
-  if(!cfg) return;
-  if(isSaving){ return; } // не дублируем запросы
+  if(!cfg || isSaving) return;
+  // Viewer может двигать карточки — пишем через masterKey если есть
+  const writeKey = cfg.masterKey || (isAdmin() ? cfg.accessKey : null);
+  if(!writeKey){ saveLocal(); return; } // нет ключа на запись — только локально
   isSaving = true;
   setStatus('saving','Сохранение…');
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}`,{
       method: 'PUT',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Master-Key': ADMIN_KEY,  // запись всегда через master key
-      },
+      headers:{ 'Content-Type':'application/json', 'X-Master-Key': writeKey },
       body: JSON.stringify(state)
     });
-    if(res.ok){
-      setStatus('ok','Синхронизировано');
-    } else {
-      setStatus('error','Ошибка сохранения');
-    }
+    if(res.ok){ setStatus('ok','Сохранено'); }
+    else { setStatus('error','Ошибка сохранения'); }
   } catch(e){
     setStatus('error','Нет соединения');
   } finally{
@@ -1233,85 +1175,61 @@ async function persist(){
 }
 
 // ═══════════════════════════════════════════════════════
-// SETTINGS MODAL (смена ключа / выход)
-// ═══════════════════════════════════════════════════════
-function openGithubModal(){
-  el('gh-error').style.display = 'none';
-  el('gh-token-input').value   = '';
-  const lbl = el('current-role-label');
-  if(lbl) lbl.textContent = isAdmin() ? 'Администратор 👑' : 'Участник команды';
-  openOverlay('github-overlay');
-  setTimeout(()=>el('gh-token-input').focus(),100);
-}
-
-async function saveGithubCfg(){
-  const key   = el('gh-token-input').value.trim();
-  const errEl = el('gh-error');
-  errEl.style.display = 'none';
-  if(!key){ errEl.textContent='Введи ключ'; errEl.style.display='block'; return; }
-  const btn = el('gh-save-btn');
-  btn.textContent='Проверяем…'; btn.disabled=true;
-  try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{
-      headers:{'X-Master-Key':key,'X-Access-Key':key}
-    });
-    if(res.status===401||res.status===403) throw new Error('Ключ неверный');
-    if(!res.ok) throw new Error('Ошибка: '+res.status);
-    const role = (key===ADMIN_KEY)?'admin':'viewer';
-    cfg = {key, role};
-    saveCfg(cfg);
-    closeOverlay('github-overlay');
-    updateGhBtn();
-    toast('Ключ обновлён, роль: '+(role==='admin'?'Администратор':'Участник'),'ok');
-  } catch(e){
-    errEl.textContent=e.message; errEl.style.display='block';
-  } finally{ btn.textContent='Сохранить'; btn.disabled=false; }
-}
-
-function updateGhBtn(){
-  const btn = el('gh-settings-btn');
-  if(!btn) return;
-  btn.textContent = cfg ? (isAdmin()?'👑 Админ':'👤 Участник') : '⚙ Войти';
-  btn.style.color = isAdmin() ? 'var(--warning)' : 'var(--dev)';
-}
-
-// ═══════════════════════════════════════════════════════
 // EVENTS
 // ═══════════════════════════════════════════════════════
 function setupEvents(){
   document.querySelectorAll('[data-close]').forEach(btn=>{
-    btn.addEventListener('click',()=>closeOverlay(btn.dataset.close));
+    btn.addEventListener('click',()=>{
+      // Не закрываем модалку входа если не залогинен
+      const id = btn.dataset.close;
+      if(id==='github-overlay' && !cfg) return;
+      closeOverlay(id);
+    });
   });
   document.querySelectorAll('.overlay').forEach(ov=>{
-    ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('open'); });
+    ov.addEventListener('click',e=>{
+      if(e.target!==ov) return;
+      if(ov.id==='github-overlay' && !cfg) return; // не закрываем без логина
+      ov.classList.remove('open');
+    });
   });
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape') document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));
+    if(e.key==='Escape'){
+      document.querySelectorAll('.overlay.open').forEach(o=>{
+        if(o.id==='github-overlay' && !cfg) return;
+        o.classList.remove('open');
+      });
+    }
   });
 
-  el('login-btn').addEventListener('click', doLogin);
-  el('login-token').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+  el('gh-save-btn').addEventListener('click', doLogin);
+  el('gh-token-input').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+  el('gh-bin-id').addEventListener('keydown',e=>{ if(e.key==='Enter') el('gh-token-input').focus(); });
+
+  el('gh-disconnect-btn').addEventListener('click',()=>{
+    cfg=null; localStorage.removeItem('gamefy_cfg');
+    closeOverlay('github-overlay');
+    showLoginModal(true);
+    updateGhBtn();
+    toast('Вы вышли');
+  });
+
+  el('gh-settings-btn').addEventListener('click',()=> showLoginModal(false));
 
   el('team-btn').addEventListener('click', openTeamModal);
-  el('gh-settings-btn').addEventListener('click', openGithubModal);
+
+  // Клик на статус = обновить данные
+  el('sync-status').style.cursor='pointer';
+  el('sync-status').title='Нажми для обновления';
+  el('sync-status').addEventListener('click', syncPull);
 
   el('save-card-btn').addEventListener('click', saveCard);
   el('delete-card-btn').addEventListener('click', deleteCard);
   el('subtask-add-btn').addEventListener('click', addSubtask);
-  el('subtask-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addSubtask(); } });
+  el('subtask-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();addSubtask();} });
 
   el('add-member-btn').addEventListener('click', openAddMemberModal);
   el('save-member-btn').addEventListener('click', saveMember);
-
-  el('gh-save-btn').addEventListener('click', saveGithubCfg);
-  el('gh-disconnect-btn').addEventListener('click',()=>{
-    cfg=null;
-    localStorage.removeItem('gamefy_cfg');
-    if(syncTimer){ clearInterval(syncTimer); syncTimer=null; }
-    closeOverlay('github-overlay');
-    showLoginScreen();
-    toast('Вы вышли');
-  });
 
   el('confirm-ok-btn').addEventListener('click',()=>{
     closeOverlay('confirm-overlay');
@@ -1321,9 +1239,9 @@ function setupEvents(){
   el('help-fab').addEventListener('click',()=>openOverlay('help-overlay'));
 
   el('mobile-tabs').addEventListener('click',e=>{
-    const tab = e.target.closest('.mobile-tab');
+    const tab=e.target.closest('.mobile-tab');
     if(!tab) return;
-    activeMobileCol = tab.dataset.col;
+    activeMobileCol=tab.dataset.col;
     document.querySelectorAll('.mobile-tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
     renderBoard();
@@ -1331,17 +1249,23 @@ function setupEvents(){
 }
 
 function addSubtask(){
-  const inp = el('subtask-input');
-  const v = inp.value.trim();
+  const inp=el('subtask-input');
+  const v=inp.value.trim();
   if(!v) return;
   subtasks.push({t:v,done:false});
-  inp.value='';
-  renderSubtasks();
-  inp.focus();
+  inp.value=''; renderSubtasks(); inp.focus();
+}
+
+function updateGhBtn(){
+  const btn=el('gh-settings-btn');
+  if(!btn) return;
+  if(!cfg){ btn.textContent='🔑 Войти'; btn.style.color='var(--muted)'; return; }
+  btn.textContent = isAdmin() ? '👑 Админ' : '👤 Участник';
+  btn.style.color = isAdmin() ? 'var(--warning)' : 'var(--dev)';
 }
 
 // ═══════════════════════════════════════════════════════
-// OVERLAY HELPERS
+// HELPERS
 // ═══════════════════════════════════════════════════════
 function openOverlay(id){ el(id).classList.add('open'); }
 function closeOverlay(id){ el(id).classList.remove('open'); }
@@ -1349,20 +1273,15 @@ function closeOverlay(id){ el(id).classList.remove('open'); }
 function showConfirm(title,text,cb){
   el('confirm-title').textContent=title;
   el('confirm-text').textContent=text;
-  confirmCb=cb;
-  openOverlay('confirm-overlay');
+  confirmCb=cb; openOverlay('confirm-overlay');
 }
 
 function setStatus(s,text){
-  const dot = el('sync-dot');
-  const txt = el('sync-text');
+  const dot=el('sync-dot'); const txt=el('sync-text');
   if(dot) dot.className='sync-dot '+s;
   if(txt) txt.textContent=text;
 }
 
-// ═══════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════
 function el(id){ return document.getElementById(id); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1376,11 +1295,9 @@ function deadlineCls(dl){
 }
 let toastT=null;
 function toast(msg,type=''){
-  const t=el('toast');
-  t.textContent=msg;
+  const t=el('toast'); t.textContent=msg;
   t.className='toast show'+(type?' '+type:'');
-  clearTimeout(toastT);
-  toastT=setTimeout(()=>t.className='toast',2500);
+  clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2500);
 }
 </script>
 </body>
