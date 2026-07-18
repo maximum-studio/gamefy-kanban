@@ -70,8 +70,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 }
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{background:#6A4DEA;box-shadow:0 0 16px var(--accent-glow)}
-.btn-ghost{background:transparent;color:#C0C0D8;border:1px solid #454560}
-.btn-ghost:hover{background:var(--surface2);color:#fff;border-color:#666688}
+.btn-ghost{background:rgba(255,255,255,0.07);color:#E0E0F0;border:1px solid #5a5a7a}
+.btn-ghost:hover{background:rgba(255,255,255,0.13);color:#fff;border-color:#8888aa}
 .btn-danger-soft{background:var(--danger-bg);color:var(--danger);border:1px solid rgba(248,113,113,.2)}
 .btn-danger-soft:hover{background:rgba(248,113,113,.2)}
 
@@ -301,7 +301,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .subtasks-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .subtask-item{display:flex;align-items:center;gap:8px}
 .subtask-check{
-  width:16px;height:16px;border-radius:4px;
+  width:18px;height:18px;border-radius:5px;
   border:1.5px solid var(--border2);background:var(--surface2);
   cursor:pointer;flex-shrink:0;appearance:none;
   transition:all .15s;position:relative;
@@ -310,10 +310,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .subtask-check:checked::after{
   content:'✓';position:absolute;inset:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:10px;color:#fff;
+  font-size:11px;color:#fff;
 }
-.subtask-text{font-size:13px;flex:1}
-.subtask-text.done-text{text-decoration:line-through;color:var(--muted)}
+.subtask-text{font-size:14px;flex:1;line-height:1.4}
+.subtask-text.done-text{text-decoration:line-through;color:var(--muted);font-size:14px}
 .add-subtask-row{display:flex;gap:8px;margin-top:4px}
 .add-subtask-input{
   flex:1;font-family:inherit;font-size:12px;color:var(--text);
@@ -323,16 +323,60 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .add-subtask-input:focus{outline:none;border-color:var(--accent);border-style:solid}
 .btn-sm{padding:5px 12px;font-size:12px}
 
-/* ASSIGNEE PICKER */
-.assignee-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.ap-chip{
-  display:flex;align-items:center;gap:6px;
-  padding:5px 10px;border-radius:20px;
-  border:1.5px solid var(--border2);background:var(--surface2);
-  cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);
-  transition:all .15s;user-select:none;
+/* ASSIGNEE LIST */
+.assignee-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.assignee-row{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;border-radius:var(--r-sm);
+  background:var(--surface2);border:1px solid var(--border);
 }
-.ap-chip.selected{border-color:var(--accent);background:var(--accent-glow);color:var(--accent2)}
+.assignee-row-avatar{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;
+}
+.assignee-row-avatar img{width:100%;height:100%;object-fit:cover}
+.assignee-row-name{font-size:13px;font-weight:500;flex:1}
+.assignee-row-role{font-size:11px;color:var(--muted)}
+.assignee-row-del{
+  width:18px;height:18px;border-radius:3px;
+  border:none;background:transparent;color:var(--muted2);
+  font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0.4;transition:all .15s;flex-shrink:0;
+}
+.assignee-row:hover .assignee-row-del{opacity:1;color:var(--danger)}
+.assignee-add-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 12px;border-radius:var(--r-sm);
+  border:1.5px dashed var(--border2);background:transparent;
+  color:var(--muted);font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;width:100%;margin-top:2px;
+  font-family:inherit;
+}
+.assignee-add-btn:hover{border-color:var(--accent);color:var(--accent2);background:var(--accent-glow)}
+/* ASSIGNEE DROPDOWN */
+.assignee-dropdown{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r);overflow:hidden;margin-top:4px;
+  display:none;
+}
+.assignee-dropdown.open{display:block}
+.assignee-option{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;cursor:pointer;transition:background .15s;
+  font-size:13px;
+}
+.assignee-option:hover{background:var(--accent-glow)}
+.assignee-option-avatar{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;
+}
+.assignee-option-avatar img{width:100%;height:100%;object-fit:cover}
+.assignee-option-info{flex:1}
+.assignee-option-name{font-size:13px;font-weight:500}
+.assignee-option-role{font-size:11px;color:var(--muted)}
 .ap-avatar{
   width:20px;height:20px;border-radius:50%;
   background:var(--accent);color:#fff;font-size:9px;font-weight:700;
@@ -394,13 +438,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .help-fab{
   position:fixed;bottom:24px;right:24px;
   width:40px;height:40px;border-radius:50%;
-  background:var(--surface2);border:1px solid var(--border2);
-  color:var(--muted);font-size:18px;font-weight:700;
+  background:var(--accent);border:2px solid rgba(255,255,255,0.15);
+  color:#fff;font-size:18px;font-weight:700;
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all .2s;z-index:50;
-  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  box-shadow:0 4px 20px rgba(124,92,252,0.5);
 }
-.help-fab:hover{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow)}
+.help-fab:hover{background:#6A4DEA;box-shadow:0 0 28px rgba(124,92,252,0.7);transform:scale(1.08)}
 
 /* SYNC STATUS */
 .sync-status{
@@ -565,7 +609,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       </div>
       <div class="field">
         <label>Исполнители</label>
-        <div class="assignee-picker" id="assignee-picker"></div>
+        <div class="assignee-list" id="assignee-list"></div>
+        <button type="button" class="assignee-add-btn" id="assignee-add-btn">+ Добавить исполнителя</button>
+        <div class="assignee-dropdown" id="assignee-dropdown"></div>
       </div>
       <div class="field">
         <label>Дедлайн</label>
@@ -630,19 +676,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="modal-body">
       <div id="login-welcome" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.6">
-        Введи ключ доступа который выдал администратор.<br>
-        Ключ сохранится в браузере — больше вводить не придётся.
+        Первый вход — введи любой пароль, ты станешь администратором.<br>Пароль сохранится в браузере — больше вводить не нужно.
       </div>
       <div id="login-role-info" style="display:none;font-size:13px;color:var(--muted);line-height:1.6">
         Текущая роль: <strong id="current-role-label" style="color:var(--accent2)">—</strong>
       </div>
       <div class="field">
-        <label id="bin-id-label">BIN ID (выдаёт администратор)</label>
-        <input type="text" id="gh-bin-id" placeholder="6642f3abc123...">
+        <label id="pass-label">Пароль доступа</label>
+        <input type="password" id="gh-token-input" placeholder="Введи пароль…">
       </div>
-      <div class="field">
-        <label>Ключ доступа</label>
-        <input type="password" id="gh-token-input" placeholder="$2b$10$...">
+      <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:-4px">
+        Первый кто войдёт — становится администратором.<br>
+        Остальным выдай другой пароль через настройки.
       </div>
       <div id="gh-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px"></div>
     </div>
@@ -733,9 +778,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 'use strict';
 
 // ═══════════════════════════════════════════════════════
-// CONFIG — всё хранится в localStorage, ничего в коде
+// SUPABASE CONFIG — anon key публичный, так и должно быть
 // ═══════════════════════════════════════════════════════
-const APP_VERSION = '5.0';
+const SUPABASE_URL  = 'https://wbztfmetvlbfysunuqks.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndienRmbWV0dmxiZnlzdW51cWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNDkyMDcsImV4cCI6MjA5OTkyNTIwN30.x10l_A83sE-kzxEB-iiOG_-3Wx_TjWYpR2tkSgnMzAw';
+
+// Роли определяются через модальное окно — admin вводит пароль
+// ADMIN_PASSWORD храни только в голове, в код не попадает
+const APP_VERSION = '6.0';
 
 const COLS = [
   {id:'todo',   label:'Tasks',  color:'#7C5CFC'},
@@ -748,19 +798,15 @@ const COLS = [
 // STATE
 // ═══════════════════════════════════════════════════════
 let state = { cards:[], members:[], doneHistory:0 };
-
-// cfg хранится в localStorage:
-// { binId, masterKey, accessKey, role }
-// role = 'admin' если вошёл с masterKey, 'viewer' если с accessKey
-let cfg = null;
-
+let role  = null; // 'admin' | 'viewer'
+let rowId = null; // ID строки в Supabase
 let dragId = null;
 let editingCardId = null;
 let editingMemberId = null;
-let confirmCb = null;
+let confirmCb  = null;
 let activeMobileCol = 'todo';
-let subtasks = [];
-let isSaving = false;
+let subtasks   = [];
+let isSaving   = false;
 
 // ═══════════════════════════════════════════════════════
 // STORAGE
@@ -771,26 +817,72 @@ function loadLocal(){
 function saveLocal(){
   try{ localStorage.setItem('gamefy_state', JSON.stringify(state)); }catch{}
 }
-function loadCfg(){
-  try{ return JSON.parse(localStorage.getItem('gamefy_cfg')||'null'); }catch{ return null; }
+function loadSession(){
+  try{ return JSON.parse(localStorage.getItem('gamefy_session')||'null'); }catch{ return null; }
 }
-function saveCfg(v){ try{ localStorage.setItem('gamefy_cfg', JSON.stringify(v)); }catch{} }
-function isAdmin(){ return cfg && cfg.role === 'admin'; }
+function saveSession(v){ try{ localStorage.setItem('gamefy_session', JSON.stringify(v)); }catch{} }
+function isAdmin(){ return role === 'admin'; }
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE API
+// ═══════════════════════════════════════════════════════
+async function sbGet(){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/kanban?select=id,data&limit=1`, {
+    headers:{
+      'apikey': SUPABASE_ANON,
+      'Authorization': `Bearer ${SUPABASE_ANON}`,
+    }
+  });
+  if(!res.ok) throw new Error('Supabase read error: ' + res.status);
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+async function sbUpdate(data){
+  if(!rowId) return false;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/kanban?id=eq.${rowId}`, {
+    method: 'PATCH',
+    headers:{
+      'apikey': SUPABASE_ANON,
+      'Authorization': `Bearer ${SUPABASE_ANON}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify({ data })
+  });
+  return res.ok;
+}
+
+async function sbInsert(data){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/kanban`, {
+    method: 'POST',
+    headers:{
+      'apikey': SUPABASE_ANON,
+      'Authorization': `Bearer ${SUPABASE_ANON}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    },
+    body: JSON.stringify({ data })
+  });
+  if(!res.ok) throw new Error('Insert error: ' + res.status);
+  const rows = await res.json();
+  return rows[0];
+}
 
 // ═══════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  try {
-    // Сброс кэша при смене версии
+  try{
+    // Сброс кэша при новой версии
     if(localStorage.getItem('gamefy_version') !== APP_VERSION){
-      const savedCfg = localStorage.getItem('gamefy_cfg');
+      const sess = localStorage.getItem('gamefy_session');
       localStorage.clear();
-      if(savedCfg) localStorage.setItem('gamefy_cfg', savedCfg);
+      if(sess) localStorage.setItem('gamefy_session', sess);
       localStorage.setItem('gamefy_version', APP_VERSION);
     }
 
-    // Загружаем локальный кэш доски
+    // Локальный кэш
     const saved = loadLocal();
     if(saved && typeof saved === 'object'){
       if(Array.isArray(saved.cards))            state.cards       = saved.cards;
@@ -798,14 +890,17 @@ window.addEventListener('DOMContentLoaded', () => {
       if(typeof saved.doneHistory === 'number') state.doneHistory = saved.doneHistory;
     }
 
-    cfg = loadCfg();
+    // Восстанавливаем сессию
+    const sess = loadSession();
+    if(sess && sess.role){ role = sess.role; }
+
     setupEvents();
 
-    if(cfg){
+    if(role){
       showBoard();
     } else {
-      showLoginModal(true); // первый вход — модалка не закрывается крестиком
-      renderBoard();        // показываем пустую доску за модалкой
+      showLoginModal(true);
+      renderBoard();
       renderStats();
     }
 
@@ -819,34 +914,21 @@ window.addEventListener('DOMContentLoaded', () => {
 // SCREENS
 // ═══════════════════════════════════════════════════════
 function showLoginModal(isFirst=false){
-  el('login-modal-title').textContent = isFirst ? 'Добро пожаловать 👋' : 'Настройки входа';
+  el('login-modal-title').textContent = isFirst ? 'Добро пожаловать 👋' : 'Смена роли';
   el('login-welcome').style.display   = isFirst ? '' : 'none';
   el('login-role-info').style.display = isFirst ? 'none' : '';
   el('login-cancel-btn').style.display = isFirst ? 'none' : '';
-  el('gh-disconnect-btn').style.display = (cfg && !isFirst) ? '' : 'none';
-
-  // Если уже входили — показываем bin id и роль
-  if(cfg){
-    el('gh-bin-id').value = cfg.binId || '';
-    el('current-role-label').textContent = isAdmin() ? 'Администратор 👑' : 'Участник команды';
-  } else {
-    el('gh-bin-id').value = '';
-  }
+  el('gh-disconnect-btn').style.display = (!isFirst && role) ? '' : 'none';
+  if(role) el('current-role-label').textContent = isAdmin() ? 'Администратор 👑' : 'Участник команды';
   el('gh-token-input').value = '';
   el('gh-error').style.display = 'none';
   el('gh-save-btn').textContent = isFirst ? 'Войти' : 'Сохранить';
-
   openOverlay('github-overlay');
-  setTimeout(()=>{
-    const f = !cfg || !el('gh-bin-id').value
-      ? el('gh-bin-id')
-      : el('gh-token-input');
-    f.focus();
-  }, 150);
+  setTimeout(()=> el('gh-token-input').focus(), 150);
 }
 
 function showBoard(){
-  updateGhBtn();
+  updateRoleBtn();
 
   // Демо-данные если пусто
   if(!state.members.length){
@@ -938,12 +1020,18 @@ function cardHTML(c){
     ? '<span class="card-tag tag-dev">Dev</span>' : '';
   const dlCls = deadlineCls(c.deadline);
   const dlLbl = c.deadline ? fmtDate(c.deadline) : '';
-  const assigneeHTML = member
+  const assigneeCount = (c.assignees||[]).length;
+  const assigneeHTML = assigneeCount === 0
+    ? '<div style="font-size:11px;color:var(--muted2)">—</div>'
+    : assigneeCount === 1 && member
     ? `<div class="card-assignee-info">
          <a class="card-assignee-name" href="${esc(member.tg||'#')}" target="_blank">${esc(member.name)}</a>
          <div class="card-assignee-role">${esc(member.role)}</div>
        </div>`
-    : '<div style="font-size:11px;color:var(--muted2)">—</div>';
+    : `<div class="card-assignee-info">
+         <div class="card-assignee-name" style="color:var(--accent2)">${assigneeCount} исполнителя</div>
+         <div class="card-assignee-role">${esc(member?.name||'')}${assigneeCount>1?` +${assigneeCount-1}`:''}</div>
+       </div>`;
   return `<div class="card" draggable="true" data-id="${esc(c.id)}">
     <div class="card-top">
       <div class="card-title">${esc(c.title)}</div>${tag}
@@ -1019,7 +1107,7 @@ function openCardModal(id=null, colId='todo'){
   el('f-type').value     = c ? c.type||''   : '';
   el('f-col').value      = c ? c.col        : colId;
   el('f-desc').value     = c ? c.desc||''   : '';
-  el('f-deadline').value = c ? c.deadline||'' : '';
+  el('f-deadline').value = c ? c.deadline||'' : new Date().toISOString().slice(0,10);
   subtasks = c && c.subtasks ? JSON.parse(JSON.stringify(c.subtasks)) : [];
   renderSubtasks();
   renderAssigneePicker(c ? c.assignees||[] : []);
@@ -1042,32 +1130,74 @@ function renderSubtasks(){
   });
 }
 
+let selectedAssignees = [];
+
 function renderAssigneePicker(selected=[]){
-  el('assignee-picker').innerHTML = state.members.map(m=>`
-    <div class="ap-chip ${selected.includes(m.id)?'selected':''}" data-id="${esc(m.id)}">
-      <div class="ap-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:esc((m.name||'?')[0].toUpperCase())}</div>
-      ${esc(m.name)}
+  selectedAssignees = [...selected];
+  renderAssigneeList();
+  renderAssigneeDropdown();
+}
+
+function renderAssigneeList(){
+  const list = el('assignee-list');
+  if(!list) return;
+  list.innerHTML = selectedAssignees.map(id=>{
+    const m = state.members.find(x=>x.id===id);
+    if(!m) return '';
+    return `<div class="assignee-row" data-id="${esc(id)}">
+      <div class="assignee-row-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:esc((m.name||'?')[0].toUpperCase())}</div>
+      <div style="flex:1">
+        <div class="assignee-row-name">${esc(m.name)}</div>
+        <div class="assignee-row-role">${esc(m.role)}</div>
+      </div>
+      <button class="assignee-row-del" data-del="${esc(id)}" title="Убрать">✕</button>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.assignee-row-del').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      selectedAssignees = selectedAssignees.filter(id=>id!==btn.dataset.del);
+      renderAssigneeList();
+      renderAssigneeDropdown();
+    });
+  });
+}
+
+function renderAssigneeDropdown(){
+  const dd = el('assignee-dropdown');
+  if(!dd) return;
+  const available = state.members.filter(m=>!selectedAssignees.includes(m.id));
+  if(!available.length){ dd.classList.remove('open'); return; }
+  dd.innerHTML = available.map(m=>`
+    <div class="assignee-option" data-id="${esc(m.id)}">
+      <div class="assignee-option-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:esc((m.name||'?')[0].toUpperCase())}</div>
+      <div class="assignee-option-info">
+        <div class="assignee-option-name">${esc(m.name)}</div>
+        <div class="assignee-option-role">${esc(m.role)}</div>
+      </div>
     </div>`).join('');
-  el('assignee-picker').querySelectorAll('.ap-chip').forEach(chip=>{
-    chip.addEventListener('click',()=>chip.classList.toggle('selected'));
+  dd.querySelectorAll('.assignee-option').forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      selectedAssignees.push(opt.dataset.id);
+      dd.classList.remove('open');
+      renderAssigneeList();
+      renderAssigneeDropdown();
+    });
   });
 }
 
 function getSelectedAssignees(){
-  return [...document.querySelectorAll('#assignee-picker .ap-chip.selected')].map(c=>c.dataset.id);
+  return [...selectedAssignees];
 }
 
 function saveCard(){
   const title = el('f-title').value.trim();
   if(!title){ el('f-title').focus(); return; }
   const data = {
-    title,
-    link:     el('f-link').value.trim(),
-    type:     el('f-type').value,
-    col:      el('f-col').value,
-    desc:     el('f-desc').value.trim(),
-    deadline: el('f-deadline').value,
-    subtasks: JSON.parse(JSON.stringify(subtasks)),
+    title, link:el('f-link').value.trim(), type:el('f-type').value,
+    col:el('f-col').value, desc:el('f-desc').value.trim(),
+    deadline:el('f-deadline').value,
+    subtasks:JSON.parse(JSON.stringify(subtasks)),
     assignees:getSelectedAssignees(),
   };
   if(editingCardId){
@@ -1079,15 +1209,14 @@ function saveCard(){
     state.cards.push({id:uid(),...data});
   }
   closeOverlay('card-overlay');
-  render();
-  persist();
+  render(); persist();
   toast('Сохранено','ok');
 }
 
 function deleteCard(){
   if(!editingCardId || !isAdmin()) return;
   const title = state.cards.find(c=>c.id===editingCardId)?.title||'';
-  showConfirm('Удалить задачу?', `«${title}» будет удалена безвозвратно.`, ()=>{
+  showConfirm('Удалить задачу?',`«${title}» будет удалена безвозвратно.`,()=>{
     state.cards = state.cards.filter(c=>c.id!==editingCardId);
     closeOverlay('card-overlay');
     render(); persist(); toast('Удалено');
@@ -1145,7 +1274,7 @@ function openAddMemberModal(){
 function saveMember(){
   const name=el('m-name').value.trim();
   if(!name){ el('m-name').focus(); return; }
-  const data={name, tg:el('m-tg').value.trim(), role:el('m-role').value, avatar:el('m-avatar').value.trim()};
+  const data={name,tg:el('m-tg').value.trim(),role:el('m-role').value,avatar:el('m-avatar').value.trim()};
   if(editingMemberId){
     const idx=state.members.findIndex(m=>m.id===editingMemberId);
     state.members[idx]={...state.members[idx],...data};
@@ -1158,125 +1287,111 @@ function saveMember(){
 }
 
 // ═══════════════════════════════════════════════════════
-// LOGIN
+// LOGIN — пароль определяет роль, хранится только в памяти
 // ═══════════════════════════════════════════════════════
-async function doLogin(){
-  const binId = el('gh-bin-id').value.trim();
-  const key   = el('gh-token-input').value.trim();
+function doLogin(){
+  const pass  = el('gh-token-input').value.trim();
   const errEl = el('gh-error');
-  const btn   = el('gh-save-btn');
   errEl.style.display = 'none';
+  if(!pass){ errEl.textContent='Введи пароль доступа'; errEl.style.display='block'; return; }
 
-  // Если уже залогинен и меняет только ключ — bin id берём из cfg
-  const effectiveBinId = binId || cfg?.binId;
+  const h = simpleHash(pass);
+  let session = loadSession() || {};
 
-  if(!effectiveBinId){ errEl.textContent='Введи BIN ID'; errEl.style.display='block'; return; }
-  if(!key){ errEl.textContent='Введи ключ доступа'; errEl.style.display='block'; return; }
-
-  btn.textContent='Проверяем…'; btn.disabled=true;
-
-  try{
-    // Пробуем прочитать бин с этим ключом
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${effectiveBinId}/latest`,{
-      headers:{ 'X-Master-Key': key, 'X-Access-Key': key }
-    });
-
-    if(res.status===401 || res.status===403) throw new Error('Ключ неверный — проверь и попробуй снова');
-    if(res.status===404) throw new Error('BIN ID не найден — проверь правильность');
-    if(!res.ok) throw new Error('Ошибка сервера: ' + res.status);
-
-    const data = await res.json();
-
-    // Определяем роль: пробуем записать (только master key это может)
-    const role = await detectRole(effectiveBinId, key, data.record);
-
-    // Если ключ дал доступ на запись — сохраняем его как masterKey тоже
-    cfg = {
-      binId: effectiveBinId,
-      masterKey: role==='admin' ? key : (cfg?.masterKey||''),
-      accessKey: key,
-      role
-    };
-    saveCfg(cfg);
-
-    // Загружаем данные из бина
-    const remote = data.record;
-    if(remote && typeof remote==='object'){
-      if(Array.isArray(remote.cards))            state.cards       = remote.cards;
-      if(Array.isArray(remote.members))          state.members     = remote.members;
-      if(typeof remote.doneHistory==='number')   state.doneHistory = remote.doneHistory;
-    }
-
+  if(!session.adminHash){
+    // Самый первый вход в системе — этот пароль становится admin
+    role = 'admin';
+    session.adminHash = h;
+    saveSession(session);
+  } else if(h === session.adminHash){
+    role = 'admin';
+  } else if(session.viewerHash && h === session.viewerHash){
+    role = 'viewer';
+  } else if(isAdmin() && !session.viewerHash){
+    // Админ устанавливает пароль для команды
+    role = 'admin'; // сам остаётся admin
+    session.viewerHash = h;
+    saveSession(session);
     closeOverlay('github-overlay');
-    showBoard();
-    toast('Вход выполнен: '+(role==='admin'?'Администратор 👑':'Участник команды 👋'), 'ok');
-
-  } catch(e){
-    errEl.textContent = e.message;
+    updateRoleBtn();
+    toast('Пароль для команды установлен ✅ Теперь раздай его участникам', 'ok');
+    return;
+  } else {
+    errEl.textContent = 'Пароль не подходит. Обратись к администратору.';
     errEl.style.display = 'block';
-  } finally{
-    btn.textContent = cfg ? 'Сохранить' : 'Войти';
-    btn.disabled = false;
+    return;
   }
+
+  saveSession({...session, role});
+  closeOverlay('github-overlay');
+  showBoard();
+  toast('Вход выполнен: '+(isAdmin()?'Администратор 👑':'Участник команды 👋'), 'ok');
 }
 
-async function detectRole(binId, key, currentData){
-  // Пробуем записать — если получится, роль admin
-  try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`,{
-      method: 'PUT',
-      headers:{ 'Content-Type':'application/json', 'X-Master-Key': key },
-      body: JSON.stringify(currentData || {cards:[],members:[],doneHistory:0})
-    });
-    if(res.ok) return 'admin';
-  } catch{}
-  return 'viewer';
+function simpleHash(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; }
+  return h.toString(36);
 }
 
 // ═══════════════════════════════════════════════════════
-// JSONBIN SYNC
+// SYNC
 // ═══════════════════════════════════════════════════════
 async function syncPull(){
-  if(!cfg) return;
+  if(!role) return;
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}/latest`,{
-      headers:{ 'X-Master-Key': cfg.masterKey||cfg.accessKey, 'X-Access-Key': cfg.accessKey }
-    });
-    if(!res.ok){ setStatus('error','Ошибка соединения'); return; }
-    const data = await res.json();
-    const remote = data.record;
-    if(remote && typeof remote==='object'){
-      if(Array.isArray(remote.cards))            state.cards       = remote.cards;
-      if(Array.isArray(remote.members))          state.members     = remote.members;
-      if(typeof remote.doneHistory==='number')   state.doneHistory = remote.doneHistory;
+    const row = await sbGet();
+    if(row){
+      rowId = row.id;
+      const remote = row.data;
+      if(remote && typeof remote === 'object'){
+        if(Array.isArray(remote.cards))            state.cards       = remote.cards;
+        if(Array.isArray(remote.members))          state.members     = remote.members;
+        if(typeof remote.doneHistory === 'number') state.doneHistory = remote.doneHistory;
+      }
+      render();
+      setStatus('ok','Синхронизировано');
+    } else {
+      // Таблица пустая — создаём первую запись
+      const row2 = await sbInsert(state);
+      rowId = row2.id;
+      setStatus('ok','База создана');
     }
-    render();
-    setStatus('ok','Синхронизировано');
   } catch(e){
-    setStatus('error','Нет соединения');
+    console.error('syncPull:', e);
+    setStatus('error','Ошибка соединения');
   }
 }
 
 async function persist(){
-  if(!cfg || isSaving) return;
-  // Viewer может двигать карточки — пишем через masterKey если есть
-  const writeKey = cfg.masterKey || (isAdmin() ? cfg.accessKey : null);
-  if(!writeKey){ saveLocal(); return; } // нет ключа на запись — только локально
+  if(!role || isSaving) return;
   isSaving = true;
   setStatus('saving','Сохранение…');
   try{
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${cfg.binId}`,{
-      method: 'PUT',
-      headers:{ 'Content-Type':'application/json', 'X-Master-Key': writeKey },
-      body: JSON.stringify(state)
-    });
-    if(res.ok){ setStatus('ok','Сохранено'); }
-    else { setStatus('error','Ошибка сохранения'); }
+    if(rowId){
+      await sbUpdate(state);
+    } else {
+      const row = await sbInsert(state);
+      rowId = row.id;
+    }
+    setStatus('ok','Сохранено');
   } catch(e){
-    setStatus('error','Нет соединения');
+    console.error('persist:', e);
+    setStatus('error','Ошибка сохранения');
   } finally{
     isSaving = false;
   }
+}
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS MODAL
+// ═══════════════════════════════════════════════════════
+function updateRoleBtn(){
+  const btn = el('gh-settings-btn');
+  if(!btn) return;
+  if(!role){ btn.textContent='🔑 Войти'; btn.style.color='var(--muted)'; return; }
+  btn.textContent = isAdmin() ? '👑 Админ' : '👤 Участник';
+  btn.style.color = isAdmin() ? 'var(--warning)' : 'var(--dev)';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1285,23 +1400,22 @@ async function persist(){
 function setupEvents(){
   document.querySelectorAll('[data-close]').forEach(btn=>{
     btn.addEventListener('click',()=>{
-      // Не закрываем модалку входа если не залогинен
       const id = btn.dataset.close;
-      if(id==='github-overlay' && !cfg) return;
+      if(id==='github-overlay' && !role) return;
       closeOverlay(id);
     });
   });
   document.querySelectorAll('.overlay').forEach(ov=>{
     ov.addEventListener('click',e=>{
       if(e.target!==ov) return;
-      if(ov.id==='github-overlay' && !cfg) return; // не закрываем без логина
+      if(ov.id==='github-overlay' && !role) return;
       ov.classList.remove('open');
     });
   });
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
       document.querySelectorAll('.overlay.open').forEach(o=>{
-        if(o.id==='github-overlay' && !cfg) return;
+        if(o.id==='github-overlay' && !role) return;
         o.classList.remove('open');
       });
     }
@@ -1309,21 +1423,18 @@ function setupEvents(){
 
   el('gh-save-btn').addEventListener('click', doLogin);
   el('gh-token-input').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
-  el('gh-bin-id').addEventListener('keydown',e=>{ if(e.key==='Enter') el('gh-token-input').focus(); });
-
   el('gh-disconnect-btn').addEventListener('click',()=>{
-    cfg=null; localStorage.removeItem('gamefy_cfg');
+    role = null;
+    localStorage.removeItem('gamefy_session');
     closeOverlay('github-overlay');
     showLoginModal(true);
-    updateGhBtn();
+    updateRoleBtn();
     toast('Вы вышли');
   });
-
   el('gh-settings-btn').addEventListener('click',()=> showLoginModal(false));
-
   el('team-btn').addEventListener('click', openTeamModal);
 
-  // Клик на статус = обновить данные
+  // Клик на статус = обновить
   el('sync-status').style.cursor='pointer';
   el('sync-status').title='Нажми для обновления';
   el('sync-status').addEventListener('click', syncPull);
@@ -1332,17 +1443,25 @@ function setupEvents(){
   el('delete-card-btn').addEventListener('click', deleteCard);
   el('subtask-add-btn').addEventListener('click', addSubtask);
   el('subtask-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();addSubtask();} });
-
   el('add-member-btn').addEventListener('click', openAddMemberModal);
+  el('assignee-add-btn').addEventListener('click', ()=>{
+    const dd = el('assignee-dropdown');
+    renderAssigneeDropdown();
+    dd.classList.toggle('open');
+  });
+  // Close dropdown on outside click
+  document.addEventListener('click', e=>{
+    if(!e.target.closest('#assignee-dropdown') && !e.target.closest('#assignee-add-btn')){
+      const dd = el('assignee-dropdown');
+      if(dd) dd.classList.remove('open');
+    }
+  });
   el('save-member-btn').addEventListener('click', saveMember);
-
   el('confirm-ok-btn').addEventListener('click',()=>{
     closeOverlay('confirm-overlay');
     if(confirmCb){ confirmCb(); confirmCb=null; }
   });
-
   el('help-fab').addEventListener('click',()=>openOverlay('help-overlay'));
-
   el('mobile-tabs').addEventListener('click',e=>{
     const tab=e.target.closest('.mobile-tab');
     if(!tab) return;
@@ -1361,32 +1480,21 @@ function addSubtask(){
   inp.value=''; renderSubtasks(); inp.focus();
 }
 
-function updateGhBtn(){
-  const btn=el('gh-settings-btn');
-  if(!btn) return;
-  if(!cfg){ btn.textContent='🔑 Войти'; btn.style.color='var(--muted)'; return; }
-  btn.textContent = isAdmin() ? '👑 Админ' : '👤 Участник';
-  btn.style.color = isAdmin() ? 'var(--warning)' : 'var(--dev)';
-}
-
 // ═══════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════
 function openOverlay(id){ el(id).classList.add('open'); }
 function closeOverlay(id){ el(id).classList.remove('open'); }
-
 function showConfirm(title,text,cb){
   el('confirm-title').textContent=title;
   el('confirm-text').textContent=text;
   confirmCb=cb; openOverlay('confirm-overlay');
 }
-
 function setStatus(s,text){
   const dot=el('sync-dot'); const txt=el('sync-text');
   if(dot) dot.className='sync-dot '+s;
   if(txt) txt.textContent=text;
 }
-
 function el(id){ return document.getElementById(id); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
