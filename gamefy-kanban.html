@@ -294,6 +294,14 @@ input::placeholder {
 .field input:focus,.field textarea:focus,.field select:focus{
   outline:none;border-color:var(--accent);background:var(--bg);
 }
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.7;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
 .field textarea{resize:vertical;min-height:80px;line-height:1.5}
 .field select{cursor:pointer;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%fff' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
@@ -759,8 +767,10 @@ input::placeholder {
     <div class="modal-body">
       <div class="help-step">
         <div class="help-step-num">0</div>
-        <div class="help-step-text"><iframe src="https://www.youtube.com/embed/nH6fd8mOVWQ?si=9D8yjbGjj-dXpQdb" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
-        <br><div class="help-step-text"><strong>Видео-инструкцию по Kanban</strong> П.с. после запишу наше видео</div>
+        <div class="help-step-text">
+          <iframe src="https://www.youtube.com/embed/nH6fd8mOVWQ?si=9D8yjbGjj-dXpQdb" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+          <br><div class="help-step-text"><strong>Видео-инструкцию по Kanban</strong> П.с. после запишу наше видео
+        </div>
       </div>
       <div class="help-step">
         <div class="help-step-num">1</div>
