@@ -2,11 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://w3.org viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✅</text></svg>">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gamefy Task Manager</title>
+<title>Team Kanban | Gamefy Task Manager</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
@@ -509,7 +510,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="logo-slot" id="logo-slot" title="Логотип (замените SVG)">
       <span>SVG</span>
     </div>
-    <div class="header-title"><span>Gamefy</span> Task Manager</div>
+    <div class="header-title"><span>Team Kanban</span> | Gamefy Task Manager</div>
   </div>
   <div class="header-right">
     <div class="sync-status" id="sync-status">
@@ -527,6 +528,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="stats-done-num" id="done-count">0</div>
     <div class="stats-done-label">За всё время<br>выполнено задач</div>
   </div>
+  <!-- 
   <div class="progress-section">
     <div class="progress-label" id="progress-label">1 часть</div>
     <div class="progress-track" id="progress-track">
@@ -537,11 +539,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="progress-seg" data-i="4"></div>
     </div>
   </div>
+  -->
 </div>
+
 
 <!-- MOBILE TABS -->
 <div class="mobile-tabs" id="mobile-tabs">
-  <button class="mobile-tab active" data-col="todo">Tasks <span class="mobile-tab-badge" id="mtab-todo">0</span></button>
+  <button class="mobile-tab active" data-col="todo">To Do<span class="mobile-tab-badge" id="mtab-todo">0</span></button>
   <button class="mobile-tab" data-col="doing">Doing <span class="mobile-tab-badge" id="mtab-doing">0</span></button>
   <button class="mobile-tab" data-col="review">Review <span class="mobile-tab-badge" id="mtab-review">0</span></button>
   <button class="mobile-tab" data-col="done">Done <span class="mobile-tab-badge" id="mtab-done">0</span></button>
@@ -588,7 +592,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         <div class="field">
           <label>Колонка</label>
           <select id="f-col">
-            <option value="todo">Tasks</option>
+            <option value="todo">To Do</option>
             <option value="doing">Doing</option>
             <option value="review">Review</option>
             <option value="done">Done</option>
@@ -750,9 +754,16 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <button class="modal-close" data-close="help-overlay">✕</button>
     </div>
     <div class="modal-body">
+
+https://www.youtube.com/watch?v=nH6fd8mOVWQ
+      <div class="help-step">
+        <div class="help-step-num">0</div>
+        <div class="help-step-text"><iframe width="560" height="315" src="https://www.youtube.com/embed/nH6fd8mOVWQ?si=9D8yjbGjj-dXpQdb" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+        <div class="help-step-text"><strong>Видео-инструкцию по Kanban</strong> П.с. после запишу наше видео</div>
+      </div>
       <div class="help-step">
         <div class="help-step-num">1</div>
-        <div class="help-step-text"><strong>Tasks</strong> — новые задачи. Нажмите <strong>+ Задача</strong> или «+» в колонке, чтобы создать.</div>
+        <div class="help-step-text"><strong>To Do</strong> — новые задачи. Нажмите <strong>+ Задача</strong> или «+» в колонке, чтобы создать.</div>
       </div>
       <div class="help-step">
         <div class="help-step-num">2</div>
@@ -788,7 +799,7 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const APP_VERSION = '6.0';
 
 const COLS = [
-  {id:'todo',   label:'Tasks',  color:'#7C5CFC'},
+  {id:'todo',   label:'To Do',  color:'#7C5CFC'},
   {id:'doing',  label:'Doing',  color:'#FBBF24'},
   {id:'review', label:'Review', color:'#F472B6'},
   {id:'done',   label:'Done',   color:'#34D399'},
