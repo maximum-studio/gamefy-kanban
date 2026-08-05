@@ -805,7 +805,7 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 // Роли определяются через модальное окно — admin вводит пароль
 // ADMIN_PASSWORD храни только в голове, в код не попадает
-const APP_VERSION = '6.0';
+const APP_VERSION = '6.1';
 
 const COLS = [
   {id:'todo',   label:'To Do',  color:'#7C5CFC'},
@@ -828,6 +828,16 @@ let activeMobileCol = 'todo';
 let subtasks   = [];
 let isSaving   = false;
 
+// Автообновление
+const POLL_MS  = 30000;  // интервал фонового опроса
+const PULL_GAP = 2000;   // минимальный интервал между чтениями
+let pollTimer      = null;
+let lastRemoteJSON = null;  // копия последнего известного состояния сервера для сравнения
+let pendingRemote  = null;  // обновление, отложенное на время работы пользователя
+let lastPullAt     = 0;
+let persistSeq     = 0;     // счётчик записей; помечает устаревшими чтения, начатые раньше
+let persistQueued  = false;
+
 // ═══════════════════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════════════════
@@ -842,6 +852,17 @@ function loadSession(){
 }
 function saveSession(v){ try{ localStorage.setItem('gamefy_session', JSON.stringify(v)); }catch{} }
 function isAdmin(){ return role === 'admin'; }
+
+// Приводит произвольный объект (из localStorage или из Supabase) к форме state
+function normalizeState(obj){
+  const s = { cards:[], members:[], doneHistory:0 };
+  if(obj && typeof obj === 'object'){
+    if(Array.isArray(obj.cards))            s.cards       = obj.cards;
+    if(Array.isArray(obj.members))          s.members     = obj.members;
+    if(typeof obj.doneHistory === 'number') s.doneHistory = obj.doneHistory;
+  }
+  return s;
+}
 
 // ═══════════════════════════════════════════════════════
 // SUPABASE API
@@ -903,12 +924,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // Локальный кэш
-    const saved = loadLocal();
-    if(saved && typeof saved === 'object'){
-      if(Array.isArray(saved.cards))            state.cards       = saved.cards;
-      if(Array.isArray(saved.members))          state.members     = saved.members;
-      if(typeof saved.doneHistory === 'number') state.doneHistory = saved.doneHistory;
-    }
+    state = normalizeState(loadLocal());
 
     // Восстанавливаем сессию
     const sess = loadSession();
@@ -966,7 +982,8 @@ function showBoard(){
 
   render();
   setStatus('saving','Загрузка…');
-  syncPull();
+  syncPull({force:true});
+  startPolling();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1085,6 +1102,8 @@ function onDragStart(e){
 function onDragEnd(e){
   if(e.currentTarget.isConnected) e.currentTarget.classList.remove('dragging');
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
+  dragId = null;
+  flushPendingRemote();
 }
 function onDragOver(e){
   e.preventDefault();
@@ -1357,26 +1376,89 @@ function simpleHash(str){
 // ═══════════════════════════════════════════════════════
 // SYNC
 // ═══════════════════════════════════════════════════════
-async function syncPull(){
+function startPolling(){
+  stopPolling();
+  pollTimer = setInterval(()=>{
+    if(document.hidden) return;   // вкладка в фоне: запрос не отправляется
+    syncPull({quiet:true});
+  }, POLL_MS);
+}
+function stopPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+}
+
+// Пользователь работает с доской: перерисовка в этот момент недопустима
+function isBusy(){
+  if(isSaving || dragId) return true;
+  return ['card-overlay','add-member-overlay','confirm-overlay']
+    .some(id => el(id) && el(id).classList.contains('open'));
+}
+
+// renderBoard() пересобирает DOM целиком, поэтому скролл сохраняем вручную.
+// На десктопе скроллятся колонки, на мобильном (<=700px) — страница целиком.
+function captureScroll(){
+  const m = { page: window.scrollY, cols:{} };
+  COLS.forEach(c => { const n = el('cards-'+c.id); if(n) m.cols[c.id] = n.scrollTop; });
+  return m;
+}
+function restoreScroll(m){
+  COLS.forEach(c => { const n = el('cards-'+c.id); if(n && m.cols[c.id]) n.scrollTop = m.cols[c.id]; });
+  if(m.page) window.scrollTo(0, m.page);
+}
+
+function applyRemote(remote){
+  const pos = captureScroll();
+  state = normalizeState(remote);
+  render();
+  restoreScroll(pos);
+  if(el('team-overlay').classList.contains('open')) renderTeamList();
+  setStatus('ok','Обновлено');
+}
+
+function flushPendingRemote(){
+  if(!pendingRemote || isBusy()) return;
+  const r = pendingRemote;
+  pendingRemote = null;
+  applyRemote(r);
+}
+
+// opts.quiet — фоновый опрос: статус меняется только при реальных изменениях
+// opts.force — ручное обновление: выполняется в обход ограничения частоты запросов
+async function syncPull(opts={}){
   if(!role) return;
+  const now = Date.now();
+  if(!opts.force && now - lastPullAt < PULL_GAP) return;
+  lastPullAt = now;
+
+  const seq = persistSeq;
   try{
     const row = await sbGet();
-    if(row){
-      rowId = row.id;
-      const remote = row.data;
-      if(remote && typeof remote === 'object'){
-        if(Array.isArray(remote.cards))            state.cards       = remote.cards;
-        if(Array.isArray(remote.members))          state.members     = remote.members;
-        if(typeof remote.doneHistory === 'number') state.doneHistory = remote.doneHistory;
-      }
-      render();
-      setStatus('ok','Синхронизировано');
-    } else {
+    // Во время чтения выполнилась локальная запись: ответ устарел и вернул бы старые данные
+    if(persistSeq !== seq) return;
+
+    if(!row){
       // Таблица пустая — создаём первую запись
       const row2 = await sbInsert(state);
       rowId = row2.id;
+      lastRemoteJSON = JSON.stringify(state);
       setStatus('ok','База создана');
+      return;
     }
+
+    rowId = row.id;
+    const json = JSON.stringify(row.data);
+    if(json === lastRemoteJSON){
+      if(!opts.quiet) setStatus('ok','Актуально');
+      return;
+    }
+    lastRemoteJSON = json;
+
+    if(isBusy()){
+      pendingRemote = row.data;
+      setStatus('ok','Есть обновления');
+      return;
+    }
+    applyRemote(row.data);
   } catch(e){
     console.error('syncPull:', e);
     setStatus('error','Ошибка соединения');
@@ -1384,22 +1466,30 @@ async function syncPull(){
 }
 
 async function persist(){
-  if(!role || isSaving) return;
+  if(!role) return;
+  // Запись уже выполняется — ставим текущую в очередь, чтобы она не потерялась
+  if(isSaving){ persistQueued = true; return; }
   isSaving = true;
+  persistSeq++;          // чтения, начатые до этого момента, считаются устаревшими
+  pendingRemote = null;  // локальная запись новее отложенного обновления
   setStatus('saving','Сохранение…');
   try{
     if(rowId){
-      await sbUpdate(state);
+      const ok = await sbUpdate(state);
+      if(!ok) throw new Error('Supabase update failed');
     } else {
       const row = await sbInsert(state);
       rowId = row.id;
     }
+    lastRemoteJSON = JSON.stringify(state);  // это же состояние вернёт следующий опрос
     setStatus('ok','Сохранено');
   } catch(e){
     console.error('persist:', e);
     setStatus('error','Ошибка сохранения');
   } finally{
     isSaving = false;
+    if(persistQueued){ persistQueued = false; return persist(); }
+    flushPendingRemote();
   }
 }
 
@@ -1429,22 +1519,30 @@ function setupEvents(){
     ov.addEventListener('click',e=>{
       if(e.target!==ov) return;
       if(ov.id==='github-overlay' && !role) return;
-      ov.classList.remove('open');
+      closeOverlay(ov.id);
     });
   });
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
       document.querySelectorAll('.overlay.open').forEach(o=>{
         if(o.id==='github-overlay' && !role) return;
-        o.classList.remove('open');
+        closeOverlay(o.id);
       });
     }
   });
+
+  // При возврате на вкладку состояние запрашивается сразу, не дожидаясь следующего тика.
+  // visibilitychange и focus нередко срабатывают парой — повторный запрос отсекает PULL_GAP.
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) syncPull({quiet:true}); });
+  window.addEventListener('focus',()=> syncPull({quiet:true}));
 
   el('gh-save-btn').addEventListener('click', doLogin);
   el('gh-token-input').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
   el('gh-disconnect-btn').addEventListener('click',()=>{
     role = null;
+    stopPolling();
+    lastRemoteJSON = null;
+    pendingRemote  = null;
     localStorage.removeItem('gamefy_session');
     closeOverlay('github-overlay');
     showLoginModal(true);
@@ -1457,7 +1555,7 @@ function setupEvents(){
   // Клик на статус = обновить
   el('sync-status').style.cursor='pointer';
   el('sync-status').title='Нажми для обновления';
-  el('sync-status').addEventListener('click', syncPull);
+  el('sync-status').addEventListener('click', ()=> syncPull({force:true}));
 
   el('save-card-btn').addEventListener('click', saveCard);
   el('delete-card-btn').addEventListener('click', deleteCard);
@@ -1504,7 +1602,7 @@ function addSubtask(){
 // HELPERS
 // ═══════════════════════════════════════════════════════
 function openOverlay(id){ el(id).classList.add('open'); }
-function closeOverlay(id){ el(id).classList.remove('open'); }
+function closeOverlay(id){ el(id).classList.remove('open'); flushPendingRemote(); }
 function showConfirm(title,text,cb){
   el('confirm-title').textContent=title;
   el('confirm-text').textContent=text;
