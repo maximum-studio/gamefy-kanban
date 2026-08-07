@@ -633,6 +633,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
         <input type="date" id="f-deadline">
       </div>
     </div>
+    <div id="card-conflict" style="display:none;flex-shrink:0;padding:12px 20px;border-top:1px solid rgba(248,113,113,.25);background:var(--danger-bg)">
+      <div id="card-conflict-text" style="font-size:12px;color:var(--danger);line-height:1.5"></div>
+      <button class="btn btn-ghost btn-sm" id="card-reload-btn" style="margin-top:8px">Обновить</button>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-danger-soft" id="delete-card-btn" style="display:none;margin-right:auto">🗑 Удалить</button>
       <button class="btn btn-ghost" data-close="card-overlay">Отмена</button>
@@ -822,6 +826,8 @@ let role  = null; // 'admin' | 'viewer'
 let rowId = null; // ID строки в Supabase
 let dragId = null;
 let editingCardId = null;
+let editingCardVersion = 0;   // версия карточки на момент открытия модалки
+let conflictState = null;     // состояние сервера, показавшее конфликт
 let editingMemberId = null;
 let confirmCb  = null;
 let activeMobileCol = 'todo';
@@ -975,8 +981,8 @@ function showBoard(){
   }
   if(!state.cards.length){
     state.cards = [
-      {id:uid(),title:'Главный экран',   type:'design',col:'todo', desc:'Разработать главный экран',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цвета',done:false}],  assignees:[state.members[0].id],deadline:'2025-08-10'},
-      {id:uid(),title:'API авторизации', type:'dev',   col:'doing',desc:'Endpoint для JWT',         link:'',subtasks:[{t:'User модель',done:true},{t:'Тесты',done:false}],assignees:[state.members[1].id],deadline:'2025-07-20'},
+      {id:uid(),title:'Главный экран',   type:'design',col:'todo', desc:'Разработать главный экран',link:'',subtasks:[{t:'Wireframe',done:true},{t:'Цвета',done:false}],  assignees:[state.members[0].id],deadline:'2025-08-10',version:1},
+      {id:uid(),title:'API авторизации', type:'dev',   col:'doing',desc:'Endpoint для JWT',         link:'',subtasks:[{t:'User модель',done:true},{t:'Тесты',done:false}],assignees:[state.members[1].id],deadline:'2025-07-20',version:1},
     ];
   }
 
@@ -1122,14 +1128,41 @@ function onDrop(e){
   if(col && dragId) moveCard(dragId, col.dataset.col);
   dragId = null;
 }
-function moveCard(cardId, colId){
+// При переносе версия не сверяется: блокировать драг модалкой было бы слишком грубо.
+// Изменение накладывается на свежее состояние, поэтому чужие правки не теряются.
+async function moveCard(cardId, colId){
   const card = state.cards.find(c=>c.id===cardId);
   if(!card || card.col===colId) return;
-  if(colId==='done' && card.col!=='done') state.doneHistory++;
+  const prevCol = card.col;
+
+  // Двигаем сразу, не дожидаясь сервера — иначе перетаскивание ощущается тормозным
+  if(colId==='done' && prevCol!=='done') state.doneHistory++;
   card.col = colId;
   render();
-  persist();
-  toast('Перемещено');
+
+  let reason = null, snapshot = null;
+  const ok = await commit(fresh => {
+    snapshot = fresh;
+    const rc = fresh.cards.find(c => c.id === cardId);
+    if(!rc){ reason = 'gone'; return false; }
+    if(rc.col === colId){ reason = 'already'; return false; }
+    if(colId === 'done' && rc.col !== 'done') fresh.doneHistory++;
+    rc.col = colId;
+    rc.version = (rc.version || 1) + 1;
+  });
+
+  if(ok){ toast('Перемещено'); return; }
+
+  if(snapshot){
+    applyRemote(snapshot);                 // показываем то, что реально на сервере
+  } else {
+    if(colId==='done' && prevCol!=='done') state.doneHistory--;
+    card.col = prevCol;                    // связи не было — откатываем оптимистичный перенос
+    render();
+  }
+  if(reason === 'gone')          toast('Карточку удалил другой участник','err');
+  else if(reason === 'already')  toast('Карточка уже в этой колонке');
+  else                           toast('Не удалось переместить','err');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1139,6 +1172,9 @@ function openCardModal(id=null, colId='todo'){
   editingCardId = id;
   subtasks = [];
   const c = id ? state.cards.find(x=>x.id===id) : null;
+  // Карточки, созданные до появления версионирования, считаем первой версией
+  editingCardVersion = c ? (c.version || 1) : 0;
+  hideCardConflict();
   el('card-modal-title').textContent = id ? 'Редактировать задачу' : 'Новая задача';
   el('delete-card-btn').style.display = (id && isAdmin()) ? '' : 'none';
   el('f-title').value    = c ? c.title      : '';
@@ -1152,6 +1188,68 @@ function openCardModal(id=null, colId='todo'){
   renderAssigneePicker(c ? c.assignees||[] : []);
   openOverlay('card-overlay');
   setTimeout(()=>el('f-title').focus(), 100);
+}
+
+// kind: 'changed' — карточку изменили; 'deleted' — удалили; 'network' — нет связи.
+// fresh — состояние сервера, из него потом заполняется актуальная версия карточки.
+function showCardConflict(kind, fresh){
+  conflictState = fresh || null;
+  const reload = el('card-reload-btn');
+  const save   = el('save-card-btn');
+  if(kind === 'changed'){
+    el('card-conflict-text').textContent =
+      'Карточка была изменена, сохранение невозможно. Нажми «Обновить», предварительно скопировав свои изменения.';
+    reload.style.display = '';
+    save.disabled = true;
+  } else if(kind === 'deleted'){
+    el('card-conflict-text').textContent =
+      'Карточка была удалена, сохранение невозможно.';
+    reload.style.display = 'none';
+    save.disabled = true;
+  } else {
+    el('card-conflict-text').textContent =
+      'Нет связи с сервером, изменения не сохранены. Проверь соединение и попробуй ещё раз.';
+    reload.style.display = 'none';
+    save.disabled = false;   // сеть могла восстановиться, повтор имеет смысл
+  }
+  el('card-conflict').style.display = '';
+}
+
+// Карточки больше нет на сервере. Модалку не закрываем: закрытие означает «сохранено»,
+// и тем же жестом сообщать об отказе — сбивать с толку. fresh применяем, иначе
+// удалённая карточка осталась бы висеть на доске за модалкой.
+function showDeletedCard(fresh){
+  if(fresh){
+    const pos = captureScroll();
+    state = fresh;
+    render();
+    restoreScroll(pos);
+  }
+  showCardConflict('deleted');
+}
+
+function hideCardConflict(){
+  const box = el('card-conflict');
+  if(box) box.style.display = 'none';
+  const save = el('save-card-btn');
+  if(save) save.disabled = false;
+  conflictState = null;
+}
+
+// Заполняет модалку актуальной версией карточки и обновляет снимок версии
+function reloadConflictCard(){
+  if(!conflictState) return;
+  const id = editingCardId;
+  const pos = captureScroll();
+  state = conflictState;
+  render();
+  restoreScroll(pos);
+  if(state.cards.some(c => c.id === id)){
+    openCardModal(id);            // сбросит editingCardVersion и спрячет блок конфликта
+    toast('Показана актуальная версия');
+  } else {
+    showDeletedCard();            // состояние уже применено выше
+  }
 }
 
 function renderSubtasks(){
@@ -1229,7 +1327,7 @@ function getSelectedAssignees(){
   return [...selectedAssignees];
 }
 
-function saveCard(){
+async function saveCard(){
   const title = el('f-title').value.trim();
   if(!title){ el('f-title').focus(); return; }
   const data = {
@@ -1239,26 +1337,45 @@ function saveCard(){
     subtasks:JSON.parse(JSON.stringify(subtasks)),
     assignees:getSelectedAssignees(),
   };
-  if(editingCardId){
-    const idx = state.cards.findIndex(c=>c.id===editingCardId);
-    const old = state.cards[idx];
-    if(data.col==='done' && old.col!=='done') state.doneHistory++;
-    state.cards[idx] = {...old,...data};
-  } else {
-    state.cards.push({id:uid(),...data});
+
+  hideCardConflict();
+  const save = el('save-card-btn');
+  save.disabled = true;   // защита от повторного клика, пока идёт проверка
+
+  const id = editingCardId;
+  let deletedState = null;
+  const ok = await commit(fresh => {
+    if(!id){
+      fresh.cards.push({id:uid(), ...data, version:1});
+      return;
+    }
+    const rc = fresh.cards.find(c => c.id === id);
+    if(!rc){ deletedState = fresh; return false; }
+    // Ключевая проверка: карточку изменили с момента открытия модалки
+    if((rc.version || 1) !== editingCardVersion){ showCardConflict('changed', fresh); return false; }
+    if(data.col === 'done' && rc.col !== 'done') fresh.doneHistory++;
+    Object.assign(rc, data, {version: (rc.version || 1) + 1});
+  });
+
+  if(ok){
+    closeOverlay('card-overlay');
+    hideCardConflict();
+    toast('Сохранено','ok');
+    return;
   }
-  closeOverlay('card-overlay');
-  render(); persist();
-  toast('Сохранено','ok');
+  if(deletedState){ showDeletedCard(deletedState); return; }
+  // commit не прошёл и причину ещё не показали — значит, сорвалась связь
+  if(el('card-conflict').style.display === 'none') showCardConflict('network');
 }
 
 function deleteCard(){
   if(!editingCardId || !isAdmin()) return;
-  const title = state.cards.find(c=>c.id===editingCardId)?.title||'';
-  showConfirm('Удалить задачу?',`«${title}» будет удалена безвозвратно.`,()=>{
-    state.cards = state.cards.filter(c=>c.id!==editingCardId);
-    closeOverlay('card-overlay');
-    render(); persist(); toast('Удалено');
+  const id = editingCardId;
+  const title = state.cards.find(c=>c.id===id)?.title||'';
+  showConfirm('Удалить задачу?',`«${title}» будет удалена безвозвратно.`, async ()=>{
+    const ok = await commit(fresh => { fresh.cards = fresh.cards.filter(c=>c.id!==id); });
+    if(ok){ closeOverlay('card-overlay'); toast('Удалено'); }
+    else   toast('Не удалось удалить','err');
   });
 }
 
@@ -1292,11 +1409,15 @@ function renderTeamList(){
   list.querySelectorAll('.team-del').forEach(btn=>{
     btn.addEventListener('click',e=>{
       e.stopPropagation();
-      const m=state.members.find(x=>x.id===btn.dataset.id);
-      showConfirm('Удалить участника?',`«${m?.name||''}» будет удалён.`,()=>{
-        state.members=state.members.filter(x=>x.id!==btn.dataset.id);
-        state.cards.forEach(c=>{ c.assignees=(c.assignees||[]).filter(a=>a!==btn.dataset.id); });
-        renderTeamList(); saveLocal(); persist(); toast('Участник удалён');
+      const id = btn.dataset.id;
+      const m=state.members.find(x=>x.id===id);
+      showConfirm('Удалить участника?',`«${m?.name||''}» будет удалён.`, async ()=>{
+        const ok = await commit(fresh => {
+          fresh.members = fresh.members.filter(x=>x.id!==id);
+          fresh.cards.forEach(c=>{ c.assignees=(c.assignees||[]).filter(a=>a!==id); });
+        });
+        renderTeamList();
+        toast(ok ? 'Участник удалён' : 'Не удалось удалить', ok ? '' : 'err');
       });
     });
   });
@@ -1310,18 +1431,21 @@ function openAddMemberModal(){
   setTimeout(()=>el('m-name').focus(),100);
 }
 
-function saveMember(){
+async function saveMember(){
   const name=el('m-name').value.trim();
   if(!name){ el('m-name').focus(); return; }
   const data={name,tg:el('m-tg').value.trim(),role:el('m-role').value,avatar:el('m-avatar').value.trim()};
-  if(editingMemberId){
-    const idx=state.members.findIndex(m=>m.id===editingMemberId);
-    state.members[idx]={...state.members[idx],...data};
-  } else {
-    state.members.push({id:uid(),...data});
-  }
+  const id = editingMemberId;
+  const ok = await commit(fresh => {
+    if(!id){ fresh.members.push({id:uid(),...data}); return; }
+    const idx = fresh.members.findIndex(m=>m.id===id);
+    // Участника могли удалить, пока открыта форма — возвращаем его с прежним id
+    if(idx === -1) fresh.members.push({id,...data});
+    else           fresh.members[idx] = {...fresh.members[idx],...data};
+  });
+  if(!ok){ toast('Не удалось сохранить','err'); return; }
   closeOverlay('add-member-overlay');
-  renderTeamList(); saveLocal(); persist();
+  renderTeamList();
   toast('Участник сохранён','ok');
 }
 
@@ -1465,32 +1589,70 @@ async function syncPull(opts={}){
   }
 }
 
+// Возвращает true, если состояние действительно записано на сервер
 async function persist(){
-  if(!role) return;
+  if(!role) return false;
   // Запись уже выполняется — ставим текущую в очередь, чтобы она не потерялась
-  if(isSaving){ persistQueued = true; return; }
+  if(isSaving){ persistQueued = true; return true; }
   isSaving = true;
   persistSeq++;          // чтения, начатые до этого момента, считаются устаревшими
   pendingRemote = null;  // локальная запись новее отложенного обновления
   setStatus('saving','Сохранение…');
+  let ok = false;
   try{
     if(rowId){
-      const ok = await sbUpdate(state);
-      if(!ok) throw new Error('Supabase update failed');
+      if(!await sbUpdate(state)) throw new Error('Supabase update failed');
     } else {
       const row = await sbInsert(state);
       rowId = row.id;
     }
     lastRemoteJSON = JSON.stringify(state);  // это же состояние вернёт следующий опрос
     setStatus('ok','Сохранено');
+    ok = true;
   } catch(e){
     console.error('persist:', e);
     setStatus('error','Ошибка сохранения');
   } finally{
     isSaving = false;
-    if(persistQueued){ persistQueued = false; return persist(); }
-    flushPendingRemote();
+    if(persistQueued){ persistQueued = false; ok = await persist(); }
+    else flushPendingRemote();
   }
+  return ok;
+}
+
+// Единая точка записи. Читает свежее состояние сервера, накладывает на него одно
+// изменение и сохраняет результат — поэтому правки других участников не затираются.
+// mutate(fresh) возвращает false, чтобы отменить запись (конфликт или менять нечего).
+async function commit(mutate){
+  if(!role) return false;
+  setStatus('saving','Проверка…');
+  let row;
+  try{
+    row = await sbGet();
+  } catch(e){
+    console.error('commit:', e);
+    setStatus('error','Нет связи с сервером');
+    return false;
+  }
+  if(row) rowId = row.id;
+  const fresh = normalizeState(row && row.data);
+  let proceed;
+  try{
+    proceed = mutate(fresh);
+  } catch(e){
+    console.error('commit mutate:', e);
+    setStatus('error','Ошибка при подготовке изменений');
+    return false;
+  }
+  if(proceed === false){
+    setStatus('ok','Актуально');
+    return false;
+  }
+  const pos = captureScroll();
+  state = fresh;
+  render();
+  restoreScroll(pos);
+  return await persist();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1558,6 +1720,7 @@ function setupEvents(){
   el('sync-status').addEventListener('click', ()=> syncPull({force:true}));
 
   el('save-card-btn').addEventListener('click', saveCard);
+  el('card-reload-btn').addEventListener('click', reloadConflictCard);
   el('delete-card-btn').addEventListener('click', deleteCard);
   el('subtask-add-btn').addEventListener('click', addSubtask);
   el('subtask-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();addSubtask();} });
