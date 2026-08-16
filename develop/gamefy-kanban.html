@@ -1449,33 +1449,72 @@ function onDrop(e){
   e.preventDefault();
   const col = e.currentTarget.closest('.column');
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
-  if(col && dragId) moveCard(dragId, col.dataset.col);
+  
+  // if(col && dragId) moveCard(dragId, col.dataset.col);
+  // dragId = null;
+  if (!col || !dragId) {
+    dragId = null;
+    return;
+  }
+
+  const cardsList = col.querySelector('.cards-list');
+  const targetColId = col.dataset.col;
+  
+  // Определяем элемент, перед которым была брошена карточка
+  const afterElement = getDragAfterElement(cardsList, e.clientY);
+  
+  // Получаем список всех DOM-карточек в колонке (исключая перетаскиваемую)
+  const cardsInCol = [...cardsList.querySelectorAll('.card:not(.dragging)')];
+  
+  let targetIndexInCol;
+  if (afterElement == null) {
+    // Вставлено в самый конец колонки
+    targetIndexInCol = cardsInCol.length;
+  } else {
+    // Вставлено перед конкретным элементом
+    targetIndexInCol = cardsInCol.indexOf(afterElement);
+  }
+
+  moveCard(dragId, targetColId, targetIndexInCol);
   dragId = null;
 }
+
 // При переносе версия не сверяется: блокировать драг модалкой было бы слишком грубо.
 // Изменение накладывается на свежее состояние, поэтому чужие правки не теряются.
-async function moveCard(cardId, colId){
+async function moveCard(cardId, colId, targetIndexInCol = 0){
   const cardIndex = state.cards.findIndex(c => c.id === cardId);
   if (cardIndex === -1) return;
 
   const card = state.cards[cardIndex];
-  if (card.col === colId) return;
   const prevCol = card.col;
 
-  // Двигаем сразу, не дожидаясь сервера — иначе перетаскивание ощущается тормозным
-  if (colId === 'done' && prevCol !== 'done') state.doneHistory++;
-  
-  // 1. Извлекаем карточку из локального массива и меняем ей колонку
+
   state.cards.splice(cardIndex, 1);
   card.col = colId;
 
-  // 2. Вставляем её В НАЧАЛО целевой колонки в локальном состоянии
-  const firstInColIndex = state.cards.findIndex(c => c.col === colId);
-  if (firstInColIndex !== -1) {
-    state.cards.splice(firstInColIndex, 0, card);
-  } else {
-    state.cards.push(card);
+  insertCardAtColIndex(state.cards, card, colId, targetIndexInCol);
+
+  function insertCardAtColIndex(cardsArray, card, colId, colIndex) {
+  let currentColCount = 0;
+  let inserted = false;
+
+  for (let i = 0; i < cardsArray.length; i++) {
+    if (cardsArray[i].col === colId) {
+      if (currentColCount === colIndex) {
+        cardsArray.splice(i, 0, card);
+        inserted = true;
+        break;
+      }
+      currentColCount++;
+    }
   }
+
+  if (!inserted) {
+    cardsArray.push(card);
+  }
+}
+
+  if (colId === 'done' && prevCol !== 'done') state.doneHistory++;
 
   render();
 
@@ -1488,39 +1527,33 @@ async function moveCard(cardId, colId){
     if (rcIndex === -1) { reason = 'gone'; return false; }
     
     const rc = fresh.cards[rcIndex];
-    if (rc.col === colId) { reason = 'already'; return false; }
 
     if (colId === 'done' && rc.col !== 'done') fresh.doneHistory++;
     
-    // Вырезаем карточку из серверного массива
+    // Извлекаем из серверного массива
     fresh.cards.splice(rcIndex, 1);
     rc.col = colId;
     rc.version = (rc.version || 1) + 1;
 
-    // Вставляем её В НАЧАЛО целевой колонки в серверном массиве
-    const freshFirstInColIndex = fresh.cards.findIndex(c => c.col === colId);
-    if (freshFirstInColIndex !== -1) {
-      fresh.cards.splice(freshFirstInColIndex, 0, rc);
-    } else {
-      fresh.cards.push(rc);
-    }
+    insertCardAtColIndex(fresh.cards, rc, colId, targetIndexInCol);
   });
 
-  if (ok) { toast('Перемещено'); return; }
+  if (ok) { 
+    toast('Перемещено'); 
+    return; 
+  }
 
   if (snapshot) {
-    applyRemote(snapshot);                 // показываем то, что реально на сервере
+    applyRemote(snapshot); 
   } else {
-    // Откатываем локальное состояние, если не было связи с сервером
-    // (applyRemote перезапишет state, но для подстраховки при сбое сети восстанавливаем)
+  
     if (colId === 'done' && prevCol !== 'done') state.doneHistory--;
     
-    // Удаляем из текущей колонки и возвращаем назад
     const curIdx = state.cards.findIndex(c => c.id === cardId);
     if (curIdx !== -1) state.cards.splice(curIdx, 1);
     
     card.col = prevCol;
-    state.cards.splice(cardIndex, 0, card); // Возвращаем на исходный индекс
+    state.cards.splice(cardIndex, 0, card);
     render();
   }
 
@@ -1610,7 +1643,7 @@ function hideCardConflict(){
   conflictState = null;
 }
 
-// Заполняет модалку актуальной версией карточки и обновляет снимок версии
+
 function reloadConflictCard(){
   if(!conflictState) return;
   const id = editingCardId;
@@ -1619,10 +1652,10 @@ function reloadConflictCard(){
   render();
   restoreScroll(pos);
   if(state.cards.some(c => c.id === id)){
-    openCardModal(id);            // сбросит editingCardVersion и спрячет блок конфликта
+    openCardModal(id);            
     toast('Показана актуальная версия');
   } else {
-    showDeletedCard();            // состояние уже применено выше
+    showDeletedCard();           
   }
 }
 
@@ -1783,7 +1816,7 @@ function renderTeamList(){
            </svg></span>
         ${listTasks}</div>`;
 
-    // 1. Добавили data-id="${esc(m.id)}" к главному div карточки
+  
     return `<div class="team-member admin-only" data-id="${esc(m.id)}" style="cursor:pointer;">
       <div class="team-avatar">${m.avatar ? `<img src="${esc(m.avatar)}" alt="">` : esc((m.name||'?')[0].toUpperCase())}</div>
       <div class="team-info">
@@ -1797,7 +1830,7 @@ function renderTeamList(){
     </div>`;
   }).join('');
 
-  // 2. Навешиваем клик для РЕДАКТИРОВАНИЯ на всю карточку
+
   list.querySelectorAll('.team-member').forEach(card => {
     card.addEventListener('click', () => {
       const id = card.dataset.id;
@@ -1808,15 +1841,15 @@ function renderTeamList(){
     });
   });
 
-  // Предотвращаем всплытие клика при переходе по ссылке Telegram
+
   list.querySelectorAll('.team-name').forEach(link => {
     link.addEventListener('click', e => e.stopPropagation());
   });
 
-  // 3. Обработка КНОПКИ УДАЛЕНИЯ (уже была у вас)
+
   list.querySelectorAll('.team-del').forEach(btn => {
     btn.addEventListener('click', e => {
-      e.stopPropagation(); // Не дает открыть окно редактирования при клике на крестик
+      e.stopPropagation(); 
       const id = btn.dataset.id;
       const m = state.members.find(x => x.id === id);
       
@@ -1848,7 +1881,7 @@ async function saveMember(){
   const ok = await commit(fresh => {
     if(!id){ fresh.members.push({id:uid(),...data}); return; }
     const idx = fresh.members.findIndex(m=>m.id===id);
-    // Участника могли удалить, пока открыта форма — возвращаем его с прежним id
+   
     if(idx === -1) fresh.members.push({id,...data});
     else           fresh.members[idx] = {...fresh.members[idx],...data};
   });
@@ -1858,12 +1891,12 @@ async function saveMember(){
   toast('Участник сохранён','ok');
 }
 
-// новая функция редактирования
+
 function openEditMemberModal(id){
   const m = state.members.find(x => x.id === id);
   if (!m) return;
 
-  editingMemberId = id; // Запоминаем, кого редактируем
+  editingMemberId = id; 
   el('add-member-title').textContent = 'Редактирование участника';
   
   // Заполняем форму текущими данными
@@ -1892,15 +1925,15 @@ function doLogin(){
     return; 
   }
 
-  // 1. Проверяем ввод админского пароля
+
   if(pass === PASS_ADMIN){
     role = 'admin';
   } 
-  // 2. Проверяем ввод пользовательского пароля
+
   else if(pass === PASS_USER){
-    role = 'viewer'; // или 'user' — в зависимости от того, как названа роль в вашей системе
+    role = 'viewer';
   } 
-  // 3. Если пароль не совпал ни с одним
+
   else {
     errEl.textContent = 'Пароль не подходит. Обратись к администратору.';
     errEl.style.display = 'block';
@@ -1911,7 +1944,7 @@ function doLogin(){
   let session = loadSession() || {};
   saveSession({ ...session, role });
 
-  // Закрываем окно авторизации и обновляем интерфейс
+
   closeOverlay('github-overlay');
   
   if (typeof updateRoleBtn === 'function') updateRoleBtn();
