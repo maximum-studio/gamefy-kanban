@@ -64,6 +64,12 @@
 
 body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
 
+.admin-only.disabled{
+  /* cursor: none !important;
+  pointer-events: none !important;
+  user-select: none !important; */
+}
+
 /* ── HEADER ── */
 .header{
   background:var(--header);
@@ -231,6 +237,11 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
 }
 .card:hover{border-color:var(--default);box-shadow:0 4px 16px rgba(0,0,0,.3);transform:translateY(-1px)}
 .card:active{cursor:grabbing}
+
+.task-hot{
+  border: 2px solid var(--warning);
+}
+
 .card.dragging{opacity:.4;transform:scale(.97)}
 .card.drag-placeholder{
   height:80px;background:var(--accent-glow);
@@ -241,9 +252,31 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
 
 .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
 .card-title{font-size:var(--h3-size);font-weight:var(--h3-weight);line-height:1.4;flex:1}
+.card-title-tags{
+  display: flex;
+  gap: 5px;
+}
+
+.cart-tag-hot{
+  background-color: #fbbf243d;
+  padding: 2px 6px ;
+  border-radius: 10px;
+}
+
+.cart-tag-hot svg{
+  height: 14px;
+  width: 14px;
+}
+
+.cart-tag-hot svg{
+  stroke: var(--warning);
+}
+
 .card-tag{
   font-size:10px;font-weight:600;padding:2px 8px;
   border-radius:var(--r-xl);white-space:nowrap;flex-shrink:0;
+  display: flex;
+  align-items: center;
 }
 .tag-design{background:var(--design-bg);color:var(--design)}
 .tag-dev{background:var(--dev-bg);color:var(--dev)}
@@ -271,8 +304,9 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
   display:flex;align-items:center;justify-content:center;
   padding:20px;
   opacity:0;pointer-events:none;transition:opacity .2s;
+  z-index: -100;
 }
-.overlay.open{opacity:1;pointer-events:all}
+.overlay.open{opacity:1;pointer-events:all; z-index: 100;}
 
 .modal{
   background:var(--header);
@@ -283,7 +317,7 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
   box-shadow:0 24px 64px rgba(0,0,0,.6);
   transform:translateY(10px) scale(.98);
   transition:transform .2s;
-  overflow:hidden;
+  /* overflow:hidden; */
 }
 .overlay.open .modal{transform:translateY(0) scale(1)}
 .modal.modal-sm{max-width:400px}
@@ -359,7 +393,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
-.field textarea{resize:vertical;min-height:80px;line-height:1.5}
+.field textarea{
+  resize:vertical;
+  min-height:80px;
+  line-height:1.5;
+  field-sizing: content;
+}
 .field select{cursor:pointer;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%fff' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;appearance:none;
@@ -553,7 +592,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 .team-avatar img{width:100%;height:100%;object-fit:cover}
 .team-info{flex:1;min-width:0}
-.team-name{font-size:14px;font-weight:600;color:var(--text-accent);text-decoration:none;display:block}
+.team-name{font-size:14px;font-weight:600;color:var(--text-accent);text-decoration:none;}
 .team-name:hover{text-decoration:underline}
 .team-role{font-size:12px;color:var(--text-secondary);margin-top:1px}
 .status-user{
@@ -668,6 +707,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .overlay{align-items:flex-end;padding:0}
   .row-2{grid-template-columns:1fr}
 }
+
+*{
+  /* border: 1px solid red; */
+}
 </style>
 </head>
 <body>
@@ -685,7 +728,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-text">—</span>
     </div>
-        <button class="btn btn-ghost" title="GitHub синхронизация">
+        <button class="btn btn-ghost admin-only" title="синхронизация">
         <span>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g clip-path="url(#clip0_444_4302)">
@@ -766,16 +809,16 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     <div class="modal-body">
       <div class="field">
         <label>Заголовок</label>
-        <input type="text" id="f-title" placeholder="Название задачи">
+        <input type="text" class="admin-only" id="f-title" placeholder="Название задачи">
       </div>
-      <div class="field field-l1">
+      <div class="field field-l1 admin-only">
         <label>Ссылка на макет</label>
         <input type="url" id="f-link" placeholder="https://figma.com/...  (необязательно)">
       </div>
       <div class="row-2">
         <div class="field">
           <label>Тип задачи</label>
-          <select id="f-type">
+          <select class="admin-only" id="f-type">
             <option value="">— не выбрано —</option>
             <option value="design">Дизайн</option>
             <option value="dev">Разработка</option>
@@ -783,7 +826,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
         </div>
         <div class="field">
           <label>Колонка</label>
-          <select id="f-col">
+          <select class="admin-only" id="f-col">
             <option value="todo">To Do</option>
             <option value="doing">Doing</option>
             <option value="review">Review</option>
@@ -793,12 +836,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
       </div>
       <div class="field">
         <label>Описание</label>
-        <textarea id="f-desc" placeholder="Детали, контекст, ссылки…"></textarea>
+        <textarea class="admin-only" id="f-desc" placeholder="Детали, контекст, ссылки…"></textarea>
       </div>
       <div class="field">
         <label>Подзадачи</label>
-        <div class="subtasks-list" id="subtasks-list"></div>
-        <div class="add-subtask-row">
+        <div class="subtasks-list admin-only" id="subtasks-list"></div>
+        <div class="add-subtask-row admin-only">
           <input type="text" class="add-subtask-input" id="subtask-input" placeholder="Добавить подзадачу…">
           <button class="btn btn-ghost btn-sm" id="subtask-add-btn">
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -809,15 +852,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
       </div>
       <div class="field">
         <label>Исполнители</label>
-        <div class="assignee-list" id="assignee-list"></div>
-        <button type="button" class="assignee-add-btn" id="assignee-add-btn">+ Добавить исполнителя</button>
+        <div class="assignee-list admin-only" id="assignee-list"></div>
+        <button type="button" class="assignee-add-btn admin-only" id="assignee-add-btn">+ Добавить исполнителя</button>
         <div class="assignee-dropdown" id="assignee-dropdown"></div>
       </div>
       <div class="row-2">
         <div class="field">
           <label>Дедлайн</label>
           <span class="field-data">
-            <input type="date" id="f-deadline">
+            <input type="date" class="admin-only" id="f-deadline">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M17.6757 5.42875C17.5769 3.78656 16.2057 2.5 14.5541 2.5H13.7501V1.875C13.7501 1.53 13.4701 1.25 13.1251 1.25C12.7801 1.25 12.5001 1.53 12.5001 1.875V2.5H7.50007V1.875C7.50007 1.53 7.22007 1.25 6.87507 1.25C6.53007 1.25 6.25007 1.53 6.25007 1.875V2.5H5.446C3.79413 2.5 2.42288 3.78656 2.32444 5.42875C2.13913 8.5175 2.14257 11.6506 2.33475 14.7409C2.43225 16.3103 3.68944 17.5675 5.25882 17.665C6.83163 17.7628 8.41569 17.8116 9.99975 17.8116C11.5835 17.8116 13.1679 17.7628 14.7407 17.665C16.3101 17.5675 17.5673 16.3103 17.6648 14.7409C17.8573 11.6522 17.8607 8.51937 17.6757 5.42875ZM16.4176 14.6634C16.3588 15.605 15.6048 16.3591 14.6635 16.4175C11.5691 16.6097 8.431 16.6097 5.33663 16.4175C4.39507 16.3587 3.641 15.6047 3.58257 14.6634C3.43475 12.2875 3.40444 9.88656 3.4835 7.5H16.5169C16.5957 9.8875 16.5654 12.2884 16.4176 14.6634ZM6.87507 5C7.22007 5 7.50007 4.72 7.50007 4.375V3.75H12.5001V4.375C12.5001 4.72 12.7801 5 13.1251 5C13.4701 5 13.7501 4.72 13.7501 4.375V3.75H14.5541C15.5457 3.75 16.3688 4.52031 16.4279 5.50344C16.4426 5.75156 16.4488 6.00125 16.461 6.25H3.53913C3.55163 6.00125 3.55757 5.75156 3.57225 5.50344C3.63132 4.52031 4.45413 3.75 5.446 3.75H6.25007V4.375C6.25007 4.72 6.53007 5 6.87507 5Z" fill="#9B94AF"/>
               <path d="M6.875 11.25C7.39277 11.25 7.8125 10.8303 7.8125 10.3125C7.8125 9.79473 7.39277 9.375 6.875 9.375C6.35723 9.375 5.9375 9.79473 5.9375 10.3125C5.9375 10.8303 6.35723 11.25 6.875 11.25Z" fill="#9B94AF"/>
@@ -832,7 +875,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
         </div>
         <div class="field field-hot">
           <label for="f-hot"><div>Приоритет</div>
-          <input type="checkbox" id="f-hot">
+          <input type="checkbox" class="admin-only" id="f-hot">
           <span class="slider"></span>
           </label>
         </div>
@@ -852,7 +895,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
         </svg>
       </button>
       <button class="btn btn-ghost" data-close="card-overlay">Отмена</button>
-      <button class="btn btn-primary" id="save-card-btn">Сохранить</button>
+      <button class="btn btn-primary admin-only" id="save-card-btn">Сохранить</button>
     </div>
   </div>
 </div>
@@ -886,6 +929,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
         <select id="m-role">
           <option value="UX/UI Designer">UX/UI Designer</option>
           <option value="Dev">Dev</option>
+          <option value="PM">ПМ</option>
         </select>
       </div>
       <div class="field"><label>Аватарка (URL)</label><input type="url" id="m-avatar" placeholder="https://... (необязательно)"></div>
@@ -1046,7 +1090,7 @@ const COLS = [
 // STATE
 // ═══════════════════════════════════════════════════════
 let state = { cards:[], members:[], doneHistory:0 };
-let role  = null; // 'admin' | 'viewer'
+// let role  = null; // 'admin' | 'viewer'
 let rowId = null; // ID строки в Supabase
 let dragId = null;
 let editingCardId = null;
@@ -1068,6 +1112,17 @@ let lastPullAt     = 0;
 let persistSeq     = 0;     // счётчик записей; помечает устаревшими чтения, начатые раньше
 let persistQueued  = false;
 
+const PASS_ADMIN = 'game-admin';
+const PASS_USER  = 'admin';
+
+const ADMIN_IDS = [
+  "mrrklu5wc0oj",
+  "mrrkwzi7s4sx",
+  "ms4kxnpq7w43"
+];
+
+let role = (loadSession() || {}).role || null;
+
 // ═══════════════════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════════════════
@@ -1081,7 +1136,7 @@ function loadSession(){
   try{ return JSON.parse(localStorage.getItem('gamefy_session')||'null'); }catch{ return null; }
 }
 function saveSession(v){ try{ localStorage.setItem('gamefy_session', JSON.stringify(v)); }catch{} }
-function isAdmin(){ return role === 'admin'; }
+function isAdmin(){ return role === PASS_USER; }
 
 // Приводит произвольный объект (из localStorage или из Supabase) к форме state
 function normalizeState(obj){
@@ -1180,7 +1235,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // SCREENS
 // ═══════════════════════════════════════════════════════
 function showLoginModal(isFirst=false){
-  el('login-modal-title').textContent = isFirst ? 'Добро пожаловать 👋' : 'Смена роли';
+  el('login-modal-title').textContent = isFirst ? 'Добро пожаловать' : 'Смена роли';
   el('login-welcome').style.display   = isFirst ? '' : 'none';
   el('login-role-info').style.display = isFirst ? 'none' : '';
   el('login-cancel-btn').style.display = isFirst ? 'none' : '';
@@ -1237,6 +1292,8 @@ function renderStats(){
 }
 
 function renderBoard(){
+
+  // console.log(isUserAdmin)
   const board = el('board');
   board.innerHTML = '';
   COLS.forEach(col => {
@@ -1251,7 +1308,7 @@ function renderBoard(){
           <span class="col-name">${col.label}</span>
           <span class="col-count">${colCards.length}</span>
         </div>
-        <button class="col-add" data-col="${col.id}">+</button>
+        <button class="col-add admin-only" data-col="${col.id}">+</button>
       </div>
       <div class="cards-list" id="cards-${col.id}">
         ${colCards.length===0 ? '<div class="col-empty">Нет задач</div>' : ''}
@@ -1273,6 +1330,8 @@ function renderBoard(){
     zone.addEventListener('dragleave', onDragLeave);
     zone.addEventListener('drop',      onDrop);
   });
+
+  checkUrlCardParam()
 }
 
 function cardHTML(c){
@@ -1281,13 +1340,19 @@ function cardHTML(c){
   const done  = (c.subtasks||[]).filter(s=>s.done).length;
   const total = (c.subtasks||[]).length;
   const pct   = total ? Math.round(done/total*100) : 0;
-  const tag   = c.type==='design'
+
+  const tagHot =  c.hot ? '<div class="cart-tag-hot"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flame-icon lucide-flame"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></svg></div>' : '';
+  
+  const isHotClass = c.hot ? 'task-hot' : '';
+
+      const tag   = c.type==='design'
     ? '<span class="card-tag tag-design">Design</span>'
     : c.type==='dev'
     ? '<span class="card-tag tag-dev">Dev</span>' : '';
   const dlCls = deadlineCls(c.deadline);
   const dlLbl = c.deadline ? fmtDate(c.deadline) : '';
   const assigneeCount = (c.assignees||[]).length;
+
   const assigneeHTML = assigneeCount === 0
     ? '<div style="font-size:11px;color:var(--default)">—</div>'
     : assigneeCount === 1 && member
@@ -1299,9 +1364,13 @@ function cardHTML(c){
          <div class="card-assignee-name" style="color:var(--text-accent)">${assigneeCount} исполнителя</div>
          <div class="card-assignee-role">${esc(member?.name||'')}${assigneeCount>1?` +${assigneeCount-1}`:''}</div>
        </div>`;
-  return `<div class="card" draggable="true" data-id="${esc(c.id)}">
+  return `<div class="card ${isHotClass}" draggable="true" data-id="${esc(c.id)}">
     <div class="card-top">
-      <div class="card-title">${esc(c.title)}</div>${tag}
+      <div class="card-title">${esc(c.title)}</div>
+      <div class="card-title-tags">
+        ${tagHot}
+        ${tag}
+        </div>
     </div>
     ${total>0?`<div class="card-progress">
       <div class="card-progress-label">${done}/${total} подзадач</div>
@@ -1335,12 +1404,43 @@ function onDragEnd(e){
   dragId = null;
   flushPendingRemote();
 }
+
 function onDragOver(e){
   e.preventDefault();
   const col = e.currentTarget.closest('.column');
+  if (!col) return;
+
+  const cardsList = col.querySelector('.cards-list');
+  const draggingCard = document.querySelector('.card.dragging');
+  if (!draggingCard) return;
+
+  const afterElement = getDragAfterElement(cardsList, e.clientY);
+
+  if (afterElement == null) {
+    cardsList.appendChild(draggingCard);
+  } else {
+    cardsList.insertBefore(draggingCard, afterElement);
+  }
+
   document.querySelectorAll('.column').forEach(c=>c.classList.remove('drag-over'));
   if(col) col.classList.add('drag-over');
 }
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
+
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 3;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+
 function onDragLeave(e){
   const col = e.currentTarget.closest('.column');
   if(col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
@@ -1355,38 +1455,78 @@ function onDrop(e){
 // При переносе версия не сверяется: блокировать драг модалкой было бы слишком грубо.
 // Изменение накладывается на свежее состояние, поэтому чужие правки не теряются.
 async function moveCard(cardId, colId){
-  const card = state.cards.find(c=>c.id===cardId);
-  if(!card || card.col===colId) return;
+  const cardIndex = state.cards.findIndex(c => c.id === cardId);
+  if (cardIndex === -1) return;
+
+  const card = state.cards[cardIndex];
+  if (card.col === colId) return;
   const prevCol = card.col;
 
   // Двигаем сразу, не дожидаясь сервера — иначе перетаскивание ощущается тормозным
-  if(colId==='done' && prevCol!=='done') state.doneHistory++;
+  if (colId === 'done' && prevCol !== 'done') state.doneHistory++;
+  
+  // 1. Извлекаем карточку из локального массива и меняем ей колонку
+  state.cards.splice(cardIndex, 1);
   card.col = colId;
+
+  // 2. Вставляем её В НАЧАЛО целевой колонки в локальном состоянии
+  const firstInColIndex = state.cards.findIndex(c => c.col === colId);
+  if (firstInColIndex !== -1) {
+    state.cards.splice(firstInColIndex, 0, card);
+  } else {
+    state.cards.push(card);
+  }
+
   render();
 
   let reason = null, snapshot = null;
   const ok = await commit(fresh => {
     snapshot = fresh;
-    const rc = fresh.cards.find(c => c.id === cardId);
-    if(!rc){ reason = 'gone'; return false; }
-    if(rc.col === colId){ reason = 'already'; return false; }
-    if(colId === 'done' && rc.col !== 'done') fresh.doneHistory++;
+    
+    // Находим карточку в свежем состоянии с сервера
+    const rcIndex = fresh.cards.findIndex(c => c.id === cardId);
+    if (rcIndex === -1) { reason = 'gone'; return false; }
+    
+    const rc = fresh.cards[rcIndex];
+    if (rc.col === colId) { reason = 'already'; return false; }
+
+    if (colId === 'done' && rc.col !== 'done') fresh.doneHistory++;
+    
+    // Вырезаем карточку из серверного массива
+    fresh.cards.splice(rcIndex, 1);
     rc.col = colId;
     rc.version = (rc.version || 1) + 1;
+
+    // Вставляем её В НАЧАЛО целевой колонки в серверном массиве
+    const freshFirstInColIndex = fresh.cards.findIndex(c => c.col === colId);
+    if (freshFirstInColIndex !== -1) {
+      fresh.cards.splice(freshFirstInColIndex, 0, rc);
+    } else {
+      fresh.cards.push(rc);
+    }
   });
 
-  if(ok){ toast('Перемещено'); return; }
+  if (ok) { toast('Перемещено'); return; }
 
-  if(snapshot){
+  if (snapshot) {
     applyRemote(snapshot);                 // показываем то, что реально на сервере
   } else {
-    if(colId==='done' && prevCol!=='done') state.doneHistory--;
-    card.col = prevCol;                    // связи не было — откатываем оптимистичный перенос
+    // Откатываем локальное состояние, если не было связи с сервером
+    // (applyRemote перезапишет state, но для подстраховки при сбое сети восстанавливаем)
+    if (colId === 'done' && prevCol !== 'done') state.doneHistory--;
+    
+    // Удаляем из текущей колонки и возвращаем назад
+    const curIdx = state.cards.findIndex(c => c.id === cardId);
+    if (curIdx !== -1) state.cards.splice(curIdx, 1);
+    
+    card.col = prevCol;
+    state.cards.splice(cardIndex, 0, card); // Возвращаем на исходный индекс
     render();
   }
-  if(reason === 'gone')          toast('Карточку удалил другой участник','err');
-  else if(reason === 'already')  toast('Карточка уже в этой колонке');
-  else                           toast('Не удалось переместить','err');
+
+  if (reason === 'gone')          toast('Карточку удалил другой участник', 'err');
+  else if (reason === 'already')  toast('Карточка уже в этой колонке');
+  else                            toast('Не удалось переместить', 'err');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1396,6 +1536,13 @@ function openCardModal(id=null, colId='todo'){
   editingCardId = id;
   subtasks = [];
   const c = id ? state.cards.find(x=>x.id===id) : null;
+
+  if (id) {
+    const url = new URL(window.location);
+    url.searchParams.set('card', id);
+    history.replaceState(null, '', url);
+  }
+
   // Карточки, созданные до появления версионирования, считаем первой версией
   editingCardVersion = c ? (c.version || 1) : 0;
   hideCardConflict();
@@ -1407,6 +1554,9 @@ function openCardModal(id=null, colId='todo'){
   el('f-col').value      = c ? c.col        : colId;
   el('f-desc').value     = c ? c.desc||''   : '';
   el('f-deadline').value = c ? c.deadline||'' : new Date().toISOString().slice(0,10);
+
+  el('f-hot').checked    = c ? Boolean(c.hot) : false; 
+
   subtasks = c && c.subtasks ? JSON.parse(JSON.stringify(c.subtasks)) : [];
   renderSubtasks();
   renderAssigneePicker(c ? c.assignees||[] : []);
@@ -1560,6 +1710,7 @@ async function saveCard(){
     deadline:el('f-deadline').value,
     subtasks:JSON.parse(JSON.stringify(subtasks)),
     assignees:getSelectedAssignees(),
+    hot: el('f-hot').checked,
   };
 
   hideCardConflict();
@@ -1618,39 +1769,61 @@ function renderTeamList(){
     list.innerHTML='<div style="color:var(--text-secondary);font-size:13px;text-align:center;padding:20px">Команда пуста</div>';
     return;
   }
-  list.innerHTML = state.members.map(m=>{
-    const doneCnt = state.cards.filter(c=>c.col==='done'&&(c.assignees||[]).includes(m.id)).length;
-    return `<div class="team-member">
-      <div class="team-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:esc((m.name||'?')[0].toUpperCase())}</div>
+  
+  list.innerHTML = state.members.map(m => {
+    const listTasks = state.cards.filter(c => c.col !== 'done' && (c.assignees || []).includes(m.id)).length; 
+    const doneCnt = state.cards.filter(c => c.col === 'done' && (c.assignees || []).includes(m.id)).length;
+
+    const statusHtml = `<div class="task-to">
+        <span><svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+           <path d="M5.95898 0.0317383C6.02917 0.0101407 6.09828 0.0252814 6.15039 0.0571289C6.20474 0.0903875 6.25105 0.146151 6.2666 0.215332L6.49023 1.09033V1.09229C6.49048 1.0931 6.49089 1.09406 6.49121 1.09521C6.49184 1.09749 6.49232 1.1005 6.49316 1.104C6.49491 1.11127 6.49727 1.12148 6.49902 1.1333C6.50242 1.15621 6.50543 1.18945 6.5 1.22607C6.49443 1.26325 6.47936 1.30803 6.44531 1.34717C6.41123 1.38632 6.36392 1.41202 6.30566 1.42432L6.30664 1.42529L5.42676 1.64893L5.42578 1.64795C5.35442 1.67138 5.28352 1.65586 5.23047 1.62354C5.17469 1.58945 5.12664 1.53113 5.1123 1.45947C5.08468 1.32088 5.17256 1.20376 5.29395 1.14307L5.30371 1.13721L5.31445 1.13525L5.5791 1.06885C4.52472 0.492031 3.22914 0.531547 2.20801 1.18799L2.20605 1.18994C2.08668 1.26157 1.92572 1.24244 1.84473 1.10791C1.7734 0.989041 1.79182 0.828876 1.9248 0.747559L2.16602 0.605957C3.3182 -0.0140251 4.70355 0.00407734 5.83789 0.611816L5.76953 0.345215V0.344238C5.74587 0.272647 5.76245 0.201121 5.79492 0.147949C5.82901 0.0921735 5.88733 0.044116 5.95898 0.0297852V0.0317383Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
+           <path d="M0.388672 1.61377L0.389648 1.61279L1.27637 1.70752H1.27734L1.27832 1.7085H1.29004C1.29728 1.70914 1.30716 1.7102 1.31836 1.7124C1.3403 1.71672 1.37101 1.72618 1.40234 1.74463C1.43432 1.76349 1.4673 1.79254 1.49023 1.83643C1.5132 1.88044 1.52303 1.93281 1.51855 1.9917V1.99463L1.41895 1.98389L1.51758 1.99463L1.42188 2.85889L1.4209 2.86768C1.3977 2.98344 1.30071 3.09205 1.16309 3.09229H1.13672L1.12695 3.09033C1.00612 3.06616 0.897844 2.94615 0.919922 2.80615H0.918945L0.930664 2.68506C0.746879 3.10433 0.654321 3.56336 0.654297 4.03174C0.654297 4.59016 0.785852 5.13539 1.04688 5.61572L1.16699 5.81787L1.16797 5.8208C1.23962 5.94028 1.22078 6.10122 1.08594 6.18213C0.966486 6.2536 0.805457 6.23387 0.724609 6.09912C0.348132 5.47687 0.134766 4.77111 0.134766 4.03174C0.134798 3.37627 0.305638 2.73623 0.618164 2.1626L0.335938 2.13135L0.330078 2.13037C0.193786 2.10758 0.0746932 1.98583 0.104492 1.83643H0.105469C0.116659 1.7728 0.144332 1.71069 0.195312 1.6665C0.247938 1.6209 0.315787 1.60325 0.388672 1.61377Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
+           <path d="M6.88672 1.89844C7.00619 1.82675 7.16712 1.84564 7.24805 1.98047L7.38086 2.21777C7.67409 2.77986 7.83786 3.40077 7.83789 4.04785C7.83789 4.71839 7.65231 5.37274 7.3252 5.94824L7.63672 5.98047L7.64258 5.98145C7.77891 6.00417 7.8979 6.12597 7.86816 6.27539C7.84376 6.39743 7.74206 6.5 7.59375 6.5H7.58301V6.49805L6.6875 6.40332H6.68164V6.40234C6.54734 6.37987 6.43092 6.26166 6.45605 6.11523L6.55078 5.20508L6.55176 5.19922C6.57759 5.04542 6.70812 4.97169 6.82617 4.97168C6.90366 4.97168 6.97363 5.0054 7.01953 5.06543C7.06463 5.12443 7.08042 5.20073 7.06934 5.27832L7.06348 5.32324C7.22974 4.92047 7.31836 4.48856 7.31836 4.04785C7.31833 3.40987 7.14717 2.78916 6.80664 2.2627L6.80469 2.25977C6.73301 2.14031 6.75194 1.97938 6.88672 1.89844Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
+           <path d="M2.73926 6.46191C2.81107 6.45227 2.87774 6.46967 2.92969 6.51465C2.98151 6.55956 3.01069 6.62278 3.02148 6.6875C3.04694 6.84024 2.94031 6.98047 2.77832 6.98047V6.97949L2.48633 7.00098C3.52657 7.53554 4.78337 7.48462 5.78027 6.84375L5.7832 6.8418C5.90265 6.77036 6.06369 6.79007 6.14453 6.9248C6.21562 7.04358 6.19616 7.20191 6.06348 7.2832L6.06445 7.28418C4.88554 8.03868 3.39234 8.08388 2.17188 7.4248L2.19043 7.67285H2.18945C2.20931 7.822 2.10506 7.95605 1.94629 7.95605H1.93066C1.86494 7.95605 1.80176 7.93028 1.75488 7.88965C1.70896 7.84982 1.67373 7.78993 1.67188 7.71777L1.6709 7.71875L1.60645 6.80664V6.80566C1.59996 6.69188 1.6495 6.61648 1.70801 6.57324C1.73493 6.55337 1.76157 6.54182 1.78125 6.53516C1.79126 6.53177 1.80002 6.52885 1.80664 6.52734C1.80961 6.52667 1.81231 6.52677 1.81445 6.52637C1.8156 6.52616 1.81749 6.52553 1.81836 6.52539H1.82031L1.82715 6.52441L2.73926 6.45996V6.46191Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
+           </svg></span>
+        ${listTasks}</div>`;
+
+    // 1. Добавили data-id="${esc(m.id)}" к главному div карточки
+    return `<div class="team-member admin-only" data-id="${esc(m.id)}" style="cursor:pointer;">
+      <div class="team-avatar">${m.avatar ? `<img src="${esc(m.avatar)}" alt="">` : esc((m.name||'?')[0].toUpperCase())}</div>
       <div class="team-info">
         <a class="team-name" href="${esc(m.tg||'#')}" target="_blank">${esc(m.name)}</a>
         <div class="team-role">${esc(m.role)}</div>
       </div>
-      
-      <div class="task-to">
-        <span><svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M5.95898 0.0317383C6.02917 0.0101407 6.09828 0.0252814 6.15039 0.0571289C6.20474 0.0903875 6.25105 0.146151 6.2666 0.215332L6.49023 1.09033V1.09229C6.49048 1.0931 6.49089 1.09406 6.49121 1.09521C6.49184 1.09749 6.49232 1.1005 6.49316 1.104C6.49491 1.11127 6.49727 1.12148 6.49902 1.1333C6.50242 1.15621 6.50543 1.18945 6.5 1.22607C6.49443 1.26325 6.47936 1.30803 6.44531 1.34717C6.41123 1.38632 6.36392 1.41202 6.30566 1.42432L6.30664 1.42529L5.42676 1.64893L5.42578 1.64795C5.35442 1.67138 5.28352 1.65586 5.23047 1.62354C5.17469 1.58945 5.12664 1.53113 5.1123 1.45947C5.08468 1.32088 5.17256 1.20376 5.29395 1.14307L5.30371 1.13721L5.31445 1.13525L5.5791 1.06885C4.52472 0.492031 3.22914 0.531547 2.20801 1.18799L2.20605 1.18994C2.08668 1.26157 1.92572 1.24244 1.84473 1.10791C1.7734 0.989041 1.79182 0.828876 1.9248 0.747559L2.16602 0.605957C3.3182 -0.0140251 4.70355 0.00407734 5.83789 0.611816L5.76953 0.345215V0.344238C5.74587 0.272647 5.76245 0.201121 5.79492 0.147949C5.82901 0.0921735 5.88733 0.044116 5.95898 0.0297852V0.0317383Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
-          <path d="M0.388672 1.61377L0.389648 1.61279L1.27637 1.70752H1.27734L1.27832 1.7085H1.29004C1.29728 1.70914 1.30716 1.7102 1.31836 1.7124C1.3403 1.71672 1.37101 1.72618 1.40234 1.74463C1.43432 1.76349 1.4673 1.79254 1.49023 1.83643C1.5132 1.88044 1.52303 1.93281 1.51855 1.9917V1.99463L1.41895 1.98389L1.51758 1.99463L1.42188 2.85889L1.4209 2.86768C1.3977 2.98344 1.30071 3.09205 1.16309 3.09229H1.13672L1.12695 3.09033C1.00612 3.06616 0.897844 2.94615 0.919922 2.80615H0.918945L0.930664 2.68506C0.746879 3.10433 0.654321 3.56336 0.654297 4.03174C0.654297 4.59016 0.785852 5.13539 1.04688 5.61572L1.16699 5.81787L1.16797 5.8208C1.23962 5.94028 1.22078 6.10122 1.08594 6.18213C0.966486 6.2536 0.805457 6.23387 0.724609 6.09912C0.348132 5.47687 0.134766 4.77111 0.134766 4.03174C0.134798 3.37627 0.305638 2.73623 0.618164 2.1626L0.335938 2.13135L0.330078 2.13037C0.193786 2.10758 0.0746932 1.98583 0.104492 1.83643H0.105469C0.116659 1.7728 0.144332 1.71069 0.195312 1.6665C0.247938 1.6209 0.315787 1.60325 0.388672 1.61377Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
-          <path d="M6.88672 1.89844C7.00619 1.82675 7.16712 1.84564 7.24805 1.98047L7.38086 2.21777C7.67409 2.77986 7.83786 3.40077 7.83789 4.04785C7.83789 4.71839 7.65231 5.37274 7.3252 5.94824L7.63672 5.98047L7.64258 5.98145C7.77891 6.00417 7.8979 6.12597 7.86816 6.27539C7.84376 6.39743 7.74206 6.5 7.59375 6.5H7.58301V6.49805L6.6875 6.40332H6.68164V6.40234C6.54734 6.37987 6.43092 6.26166 6.45605 6.11523L6.55078 5.20508L6.55176 5.19922C6.57759 5.04542 6.70812 4.97169 6.82617 4.97168C6.90366 4.97168 6.97363 5.0054 7.01953 5.06543C7.06463 5.12443 7.08042 5.20073 7.06934 5.27832L7.06348 5.32324C7.22974 4.92047 7.31836 4.48856 7.31836 4.04785C7.31833 3.40987 7.14717 2.78916 6.80664 2.2627L6.80469 2.25977C6.73301 2.14031 6.75194 1.97938 6.88672 1.89844Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
-          <path d="M2.73926 6.46191C2.81107 6.45227 2.87774 6.46967 2.92969 6.51465C2.98151 6.55956 3.01069 6.62278 3.02148 6.6875C3.04694 6.84024 2.94031 6.98047 2.77832 6.98047V6.97949L2.48633 7.00098C3.52657 7.53554 4.78337 7.48462 5.78027 6.84375L5.7832 6.8418C5.90265 6.77036 6.06369 6.79007 6.14453 6.9248C6.21562 7.04358 6.19616 7.20191 6.06348 7.2832L6.06445 7.28418C4.88554 8.03868 3.39234 8.08388 2.17188 7.4248L2.19043 7.67285H2.18945C2.20931 7.822 2.10506 7.95605 1.94629 7.95605H1.93066C1.86494 7.95605 1.80176 7.93028 1.75488 7.88965C1.70896 7.84982 1.67373 7.78993 1.67188 7.71777L1.6709 7.71875L1.60645 6.80664V6.80566C1.59996 6.69188 1.6495 6.61648 1.70801 6.57324C1.73493 6.55337 1.76157 6.54182 1.78125 6.53516C1.79126 6.53177 1.80002 6.52885 1.80664 6.52734C1.80961 6.52667 1.81231 6.52677 1.81445 6.52637C1.8156 6.52616 1.81749 6.52553 1.81836 6.52539H1.82031L1.82715 6.52441L2.73926 6.45996V6.46191Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
-          </svg>
-        </span>
-         1</div>
-      
-      <div class="status-user">Нет задач</div>
+
+      ${listTasks !== 0 ? statusHtml : '<div class="status-user">Нет задач</div>' }
       <div class="team-done">✓ ${doneCnt}</div>
-      ${isAdmin()?`<button class="team-del" data-id="${esc(m.id)}">✕</button>`:''}
+      ${isAdmin() ? `<button class="team-del" data-id="${esc(m.id)}">✕</button>` : ''}
     </div>`;
   }).join('');
-  list.querySelectorAll('.team-del').forEach(btn=>{
-    btn.addEventListener('click',e=>{
-      e.stopPropagation();
+
+  // 2. Навешиваем клик для РЕДАКТИРОВАНИЯ на всю карточку
+  list.querySelectorAll('.team-member').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      
+      if (id) {
+        openEditMemberModal(id);
+      }
+    });
+  });
+
+  // Предотвращаем всплытие клика при переходе по ссылке Telegram
+  list.querySelectorAll('.team-name').forEach(link => {
+    link.addEventListener('click', e => e.stopPropagation());
+  });
+
+  // 3. Обработка КНОПКИ УДАЛЕНИЯ (уже была у вас)
+  list.querySelectorAll('.team-del').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation(); // Не дает открыть окно редактирования при клике на крестик
       const id = btn.dataset.id;
-      const m=state.members.find(x=>x.id===id);
-      showConfirm('Удалить участника?',`«${m?.name||''}» будет удалён.`, async ()=>{
+      const m = state.members.find(x => x.id === id);
+      
+      showConfirm('Удалить участника?', `«${m?.name||''}» будет удалён.`, async () => {
         const ok = await commit(fresh => {
-          fresh.members = fresh.members.filter(x=>x.id!==id);
-          fresh.cards.forEach(c=>{ c.assignees=(c.assignees||[]).filter(a=>a!==id); });
+          fresh.members = fresh.members.filter(x => x.id !== id);
+          fresh.cards.forEach(c => { c.assignees = (c.assignees || []).filter(a => a !== id); });
         });
         renderTeamList();
         toast(ok ? 'Участник удалён' : 'Не удалось удалить', ok ? '' : 'err');
@@ -1685,46 +1858,66 @@ async function saveMember(){
   toast('Участник сохранён','ok');
 }
 
+// новая функция редактирования
+function openEditMemberModal(id){
+  const m = state.members.find(x => x.id === id);
+  if (!m) return;
+
+  editingMemberId = id; // Запоминаем, кого редактируем
+  el('add-member-title').textContent = 'Редактирование участника';
+  
+  // Заполняем форму текущими данными
+  el('m-name').value   = m.name || '';
+  el('m-tg').value     = m.tg || '';
+  el('m-role').value   = m.role || 'UX/UI Designer';
+  el('m-avatar').value = m.avatar || '';
+
+  openOverlay('add-member-overlay');
+  setTimeout(() => el('m-name').focus(), 100);
+}
+
 // ═══════════════════════════════════════════════════════
 // LOGIN — пароль определяет роль, хранится только в памяти
 // ═══════════════════════════════════════════════════════
+let currentSession = loadSession() || { role: 'user', loggedIn: false };
+
 function doLogin(){
   const pass  = el('gh-token-input').value.trim();
   const errEl = el('gh-error');
   errEl.style.display = 'none';
-  if(!pass){ errEl.textContent='Введи пароль доступа'; errEl.style.display='block'; return; }
 
-  const h = simpleHash(pass);
-  let session = loadSession() || {};
+  if(!pass){ 
+    errEl.textContent = 'Введи пароль доступа'; 
+    errEl.style.display = 'block'; 
+    return; 
+  }
 
-  if(!session.adminHash){
-    // Самый первый вход в системе — этот пароль становится admin
+  // 1. Проверяем ввод админского пароля
+  if(pass === PASS_ADMIN){
     role = 'admin';
-    session.adminHash = h;
-    saveSession(session);
-  } else if(h === session.adminHash){
-    role = 'admin';
-  } else if(session.viewerHash && h === session.viewerHash){
-    role = 'viewer';
-  } else if(isAdmin() && !session.viewerHash){
-    // Админ устанавливает пароль для команды
-    role = 'admin'; // сам остаётся admin
-    session.viewerHash = h;
-    saveSession(session);
-    closeOverlay('github-overlay');
-    updateRoleBtn();
-    toast('Пароль для команды установлен ✅ Теперь раздай его участникам', 'ok');
-    return;
-  } else {
+  } 
+  // 2. Проверяем ввод пользовательского пароля
+  else if(pass === PASS_USER){
+    role = 'viewer'; // или 'user' — в зависимости от того, как названа роль в вашей системе
+  } 
+  // 3. Если пароль не совпал ни с одним
+  else {
     errEl.textContent = 'Пароль не подходит. Обратись к администратору.';
     errEl.style.display = 'block';
     return;
   }
 
-  saveSession({...session, role});
+  // Сохраняем сессию с текущей ролью
+  let session = loadSession() || {};
+  saveSession({ ...session, role });
+
+  // Закрываем окно авторизации и обновляем интерфейс
   closeOverlay('github-overlay');
-  showBoard();
-  toast('Вход выполнен: '+(isAdmin()?'Администратор 👑':'Участник команды 👋'), 'ok');
+  
+  if (typeof updateRoleBtn === 'function') updateRoleBtn();
+  if (typeof showBoard === 'function') showBoard();
+
+  toast('Вход выполнен: ' + (isAdmin() ? 'Администратор' : 'Участник команды'), 'ok');
 }
 
 function simpleHash(str){
@@ -1896,10 +2089,79 @@ async function commit(mutate){
 // ═══════════════════════════════════════════════════════
 function updateRoleBtn(){
   const btn = el('gh-settings-btn');
-  if(!btn) return;
-  if(!role){ btn.textContent='🔑 Войти'; btn.style.color='var(--text-secondary)'; return; }
-  btn.textContent = isAdmin() ? 'Админ' : '👤 Участник';
-  btn.style.color = isAdmin() ? 'var(--text-primary)' : 'var(--dev)';
+    
+    if (!role) { 
+      if (btn) {
+        btn.textContent = 'Войти'; 
+        btn.style.color = 'var(--text-secondary)'; 
+      }
+      applyAdminRestrictions(false); // Запрещаем админ-права
+      return; 
+    }
+
+    const admin = isAdmin();
+
+    if (btn) {
+      btn.textContent = admin ? 'Админ' : 'Участник';
+      btn.style.color = admin ? 'var(--text-primary)' : 'var(--dev)';
+    }
+
+    // Применяем блокировки для интерфейса
+    applyAdminRestrictions(admin);
+}
+
+function applyAdminRestrictions(isUserAdmin) {
+
+  const adminElements = document.querySelectorAll('.admin-only');
+  adminElements.forEach(element => {
+    if (isUserAdmin) {
+      console.log(isUserAdmin)
+
+      element.classList.remove('disabled', 'is-readonly');
+      element.disabled = false;
+      element.style.pointerEvents = 'auto';
+      
+    } else {
+      element.classList.add('disabled', 'is-readonly');
+      element.disabled = true;
+      element.style.pointerEvents = 'none';
+
+    }
+
+  });
+}
+
+const observer = new MutationObserver(() => {
+  applyAdminRestrictions(isAdmin());
+});
+
+// Запускаем отслеживание всего доски или body
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
+});
+
+
+let isInitialUrlChecked = false;
+
+function checkUrlCardParam() {
+
+  if (isInitialUrlChecked) return;
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const cardIdFromUrl = urlParams.get('card');
+
+  if (cardIdFromUrl) {
+    const cardExists = state.cards && state.cards.some(c => c.id === cardIdFromUrl);
+    
+    if (cardExists) {
+      isInitialUrlChecked = true;
+      openCardModal(cardIdFromUrl);
+    } else {
+      isInitialUrlChecked = true;
+      console.warn('Карточка из URL не найдена');
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2001,7 +2263,15 @@ function addSubtask(){
 // HELPERS
 // ═══════════════════════════════════════════════════════
 function openOverlay(id){ el(id).classList.add('open'); }
-function closeOverlay(id){ el(id).classList.remove('open'); flushPendingRemote(); }
+function closeOverlay(id){ 
+  el(id).classList.remove('open'); 
+  flushPendingRemote(); 
+
+  const url = new URL(window.location);
+  url.searchParams.delete('card');
+  history.replaceState(null, '', url);
+}
+
 function showConfirm(title,text,cb){
   el('confirm-title').textContent=title;
   el('confirm-text').textContent=text;
