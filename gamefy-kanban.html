@@ -312,8 +312,24 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
 
 .card-progress{margin-bottom:8px}
 .card-progress-label{font-size:var(--h4-size);font-weight:var(--h4-weight);color:var(--text-secondary);margin-bottom:4px}
-.card-progress-bar{height:4px;background:var(--gradient-inactive);border-radius:var(--r-xs);overflow:hidden}
-.card-progress-fill{height:100%;background:var(--accent);border-radius:var(--r-xs);transition:width .3s}
+.card-progress-bar{
+  height:4px;
+  border-radius:var(--r-xs);
+  overflow:hidden;
+  display: flex;
+  gap: 3px;
+}
+.card-progress-fill{
+  height:100%;
+  background:var(--secondary);
+  border-radius:var(--r-xs);
+  transition:width .3s;
+  flex: 1 1 auto;
+}
+
+.card-progress-fill.color-class{
+  background-color: var(--accent-hover);
+}
 
 .card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
 .card-assignee-info{display:flex;flex-direction:column;gap:1px}
@@ -1412,7 +1428,21 @@ function cardHTML(c){
   const dlLbl = c.deadline ? fmtDate(c.deadline) : '';
   const assigneeCount = (c.assignees||[]).length;
 
-  // console.log(total)
+
+  const chailpProgresdHtmlFirst = `<div class="card-progress-fill"></div>`;
+  const chailpProgresdHtmlSecond = `<div class="card-progress-fill color-class"></div>`;
+  const listProgresdHtml = []
+
+  for (let i = 0; i < total; i++) {
+    
+    if(i < done){
+      listProgresdHtml.push(chailpProgresdHtmlSecond)
+    } else {
+      listProgresdHtml.push(chailpProgresdHtmlFirst)
+    }
+  }
+
+
 
   const assigneeHTML = assigneeCount === 0
     ? '<div style="font-size:11px;color:var(--default)">—</div>'
@@ -1451,8 +1481,7 @@ function cardHTML(c){
     </div>
     ${total>0?`<div class="card-progress">
       <div class="card-progress-label">${done}/${total} подзадач</div>
-      // here
-      <div class="card-progress-bar"><div class="card-progress-fill" style="width:${pct}%"></div></div>
+      <div class="card-progress-bar">${listProgresdHtml.join('')}</div>
     </div>`:''}
     <div class="card-bottom">
       ${assigneeHTML}
