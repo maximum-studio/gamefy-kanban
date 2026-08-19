@@ -104,6 +104,15 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
 .btn-primary:hover{background:var(--accent-hover);box-shadow:0 0 16px var(--accent-glow)}
 .btn-ghost{background:rgba(255,255,255,0.07);color:var(--text-primary);padding:12px 26px;}
 .btn-ghost:hover{background:rgba(255,255,255,0.13);color:#fff;border-color:var(--text-secondary)}
+
+.btn-ghost-top-bnt{
+  background-color: var(--outline);
+}
+
+.btn-ghost-top-bnt:hover{
+  background:var(--accent)
+}
+
 .btn-danger-soft{background:var(--bg-light-dark);color:var(--danger);padding: 10px 13px;}
 .btn-danger-soft:hover{background:rgba(248,113,113,.2)}
 .header-right .btn{border-radius:var(--r-btn)}
@@ -182,6 +191,11 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
   max-height:calc(100vh - 200px);
   transition:border-color .2s;
 }
+
+#cards-done .card {
+  opacity: .6;
+}
+
 .column.drag-over{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow)}
 
 .col-header{
@@ -235,12 +249,8 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
   user-select:none;
   position:relative;
 }
-.card:hover{border-color:var(--default);box-shadow:0 4px 16px rgba(0,0,0,.3);transform:translateY(-1px)}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.3);transform:translateY(-1px)}
 .card:active{cursor:grabbing}
-
-.task-hot{
-  border: 2px solid var(--warning);
-}
 
 .card.dragging{opacity:.4;transform:scale(.97)}
 .card.drag-placeholder{
@@ -250,17 +260,36 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
   color:var(--text-accent);font-size:12px;
 }
 
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
-.card-title{font-size:var(--h3-size);font-weight:var(--h3-weight);line-height:1.4;flex:1}
+.card-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:8px;
+}
+
+.card-top-info{
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.card-title{font-size: 15px;font-weight:var(--h3-weight);line-height:1.4;flex:1;margin-top:14px}
 .card-title-tags{
   display: flex;
   gap: 5px;
 }
 
+.card-top-link{
+  cursor: pointer;
+}
+
 .cart-tag-hot{
-  background-color: #fbbf243d;
-  padding: 2px 6px ;
+  color: var(--danger);
+  background-color: #f8717127;
+  padding: 2px 8px ;
   border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .cart-tag-hot svg{
@@ -283,8 +312,24 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
 
 .card-progress{margin-bottom:8px}
 .card-progress-label{font-size:var(--h4-size);font-weight:var(--h4-weight);color:var(--text-secondary);margin-bottom:4px}
-.card-progress-bar{height:4px;background:var(--gradient-inactive);border-radius:var(--r-xs);overflow:hidden}
-.card-progress-fill{height:100%;background:var(--accent);border-radius:var(--r-xs);transition:width .3s}
+.card-progress-bar{
+  height:4px;
+  border-radius:var(--r-xs);
+  overflow:hidden;
+  display: flex;
+  gap: 3px;
+}
+.card-progress-fill{
+  height:100%;
+  background:var(--secondary);
+  border-radius:var(--r-xs);
+  transition:width .3s;
+  flex: 1 1 auto;
+}
+
+.card-progress-fill.color-class{
+  background-color: var(--accent-hover);
+}
 
 .card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
 .card-assignee-info{display:flex;flex-direction:column;gap:1px}
@@ -413,7 +458,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* Скрываем стандартный квадратный чекбокс */
-.field input[type="checkbox"] {
+.field-hot input[type="checkbox"] {
   opacity: 0;
   position: absolute;
   width: 0;
@@ -512,12 +557,16 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* ASSIGNEE LIST */
 .assignee-list{display:flex;gap:6px;margin-top:4px;flex-wrap: wrap;}
+
 .assignee-row{
   display:flex;align-items:center;gap:8px;
-  padding:6px 10px;border-radius:var(--r-lg);
-  background:var(--secondary);border:1px solid var(--outline);
+  padding:6px 10px;
+  border-radius:var(--r-lg);
+  background:var(--bg-light-dark);
+  border:1px solid var(--outline);
   flex: 0 1 calc(33% - 3px);
   max-width: 190px;
+  overflow: hidden;
 }
 .assignee-row-avatar{
   width:24px;height:24px;border-radius:50%;
@@ -525,17 +574,28 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;
 }
 .assignee-row-avatar img{width:100%;height:100%;object-fit:cover}
-.assignee-row-name{font-size:13px;font-weight:500;flex:1}
+.assignee-row-name{
+  font-size:12px;
+  font-weight:500;
+  flex:1;
+  color: var(--accent);
+}
 .assignee-row-role{font-size:11px;color:var(--text-secondary)}
 .assignee-row-del{
   background-color: var(--text-secondary);
-  width:18px;height:18px;border-radius:3px;
+  width: 18px;
+  height:18px;
+  border-radius:3px;
   border:none;background:transparent;color:var(--primary);
   font-size:11px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   opacity:1;transition:all .15s;flex-shrink:0;
+  transform: translateX(30px);
 }
-.assignee-row:hover .assignee-row-del{opacity:.7;}
+.assignee-row:hover .assignee-row-del{
+  transform: translateX(0);
+}
+
 .assignee-add-btn{
   display:flex;align-items:center;gap:6px;
   padding: 12px;border-radius:var(--r);
@@ -728,7 +788,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-text">—</span>
     </div>
-        <button class="btn btn-ghost admin-only" title="синхронизация">
+        <button class="btn btn-ghost admin-only btn-ghost-top-bnt" title="синхронизация">
         <span>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g clip-path="url(#clip0_444_4302)">
@@ -743,7 +803,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
             </defs>
           </svg>
       </span> <div id="gh-settings-btn">GitHub</div></button>
-    <button class="btn btn-ghost">
+    <button class="btn btn-ghost btn-ghost-top-bnt">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M10.0528 8.94133C9.95581 8.28246 9.6259 7.68017 9.12288 7.24373C8.61986 6.80728 7.97707 6.56559 7.31111 6.5625H6.69044C6.02449 6.56559 5.38169 6.80728 4.87868 7.24373C4.37566 7.68017 4.04574 8.28246 3.94878 8.94133L3.65128 11.0215C3.64177 11.0887 3.64805 11.1573 3.66962 11.2217C3.69119 11.2861 3.72745 11.3445 3.77553 11.3925C3.89219 11.5092 4.60794 12.1042 7.00136 12.1042C9.39478 12.1042 10.1088 11.5115 10.2272 11.3925C10.2753 11.3445 10.3115 11.2861 10.3331 11.2217C10.3547 11.1573 10.3609 11.0887 10.3514 11.0215L10.0528 8.94133Z" fill="#E6E6E6"/>
         <path d="M4.40983 6.88341C3.84606 7.40313 3.47924 8.10173 3.3715 8.86091L3.15567 10.3542C1.42317 10.3426 0.898166 9.71257 0.810666 9.58424C0.776843 9.53762 0.752707 9.48469 0.739682 9.42858C0.726657 9.37248 0.725008 9.31433 0.734833 9.25757L0.863166 8.53424C0.930029 8.15621 1.08706 7.79988 1.32095 7.49546C1.55484 7.19103 1.85869 6.9475 2.20673 6.7855C2.55477 6.6235 2.93674 6.54781 3.32026 6.56485C3.70378 6.5819 4.07753 6.69117 4.40983 6.88341Z" fill="#E6E6E6"/>
@@ -1112,6 +1172,7 @@ let lastPullAt     = 0;
 let persistSeq     = 0;     // счётчик записей; помечает устаревшими чтения, начатые раньше
 let persistQueued  = false;
 
+
 const PASS_ADMIN = 'game-admin';
 const PASS_USER  = 'admin';
 
@@ -1148,6 +1209,12 @@ function normalizeState(obj){
   }
   return s;
 }
+
+
+ const dateInput = document.getElementById('f-deadline');
+  dateInput.addEventListener('click', () => {
+    dateInput.showPicker();
+  });
 
 // ═══════════════════════════════════════════════════════
 // SUPABASE API
@@ -1293,7 +1360,6 @@ function renderStats(){
 
 function renderBoard(){
 
-  // console.log(isUserAdmin)
   const board = el('board');
   board.innerHTML = '';
   COLS.forEach(col => {
@@ -1321,7 +1387,12 @@ function renderBoard(){
     btn.addEventListener('click', () => openCardModal(null, btn.dataset.col))
   );
   board.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('click', () => openCardModal(card.dataset.id));
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.card-top-link')) {
+        return;
+      }
+      openCardModal(card.dataset.id);
+    })
     card.addEventListener('dragstart', onDragStart);
     card.addEventListener('dragend',   onDragEnd);
   });
@@ -1332,7 +1403,11 @@ function renderBoard(){
   });
 
   checkUrlCardParam()
+
+  dataLinkCard()
 }
+
+const baseUrl = window.location.origin + window.location.pathname;
 
 function cardHTML(c){
   const member = c.assignees && c.assignees.length
@@ -1341,7 +1416,7 @@ function cardHTML(c){
   const total = (c.subtasks||[]).length;
   const pct   = total ? Math.round(done/total*100) : 0;
 
-  const tagHot =  c.hot ? '<div class="cart-tag-hot"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flame-icon lucide-flame"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></svg></div>' : '';
+  const tagHot =  c.hot ? '<div class="cart-tag-hot">Priority</div>' : '';
   
   const isHotClass = c.hot ? 'task-hot' : '';
 
@@ -1352,6 +1427,22 @@ function cardHTML(c){
   const dlCls = deadlineCls(c.deadline);
   const dlLbl = c.deadline ? fmtDate(c.deadline) : '';
   const assigneeCount = (c.assignees||[]).length;
+
+
+  const chailpProgresdHtmlFirst = `<div class="card-progress-fill"></div>`;
+  const chailpProgresdHtmlSecond = `<div class="card-progress-fill color-class"></div>`;
+  const listProgresdHtml = []
+
+  for (let i = 0; i < total; i++) {
+    
+    if(i < done){
+      listProgresdHtml.push(chailpProgresdHtmlSecond)
+    } else {
+      listProgresdHtml.push(chailpProgresdHtmlFirst)
+    }
+  }
+
+
 
   const assigneeHTML = assigneeCount === 0
     ? '<div style="font-size:11px;color:var(--default)">—</div>'
@@ -1366,15 +1457,31 @@ function cardHTML(c){
        </div>`;
   return `<div class="card ${isHotClass}" draggable="true" data-id="${esc(c.id)}">
     <div class="card-top">
-      <div class="card-title">${esc(c.title)}</div>
-      <div class="card-title-tags">
-        ${tagHot}
-        ${tag}
+      <div class="card-top-info">
+        <div class="card-title">${esc(c.title)}</div>
+          <div class="card-title-tags">
+          ${tag}
+          ${tagHot}
+        </div>
+      </div>
+      <div class="card-top-link" data-link="${baseUrl}?card=${esc(c.id)}">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="24" height="24" rx="12" fill="#3A2A60"/>
+          <g clip-path="url(#clip0_768_2102)">
+          <path d="M10.9757 15.1464L9.56168 16.5604C8.97546 17.1466 8.02612 17.1466 7.44039 16.5605C6.85454 15.9746 6.85454 15.0252 7.44027 14.4395L10.2688 11.6109C10.8545 11.0252 11.804 11.0252 12.3897 11.6109C12.5849 11.8062 12.9015 11.8062 13.0968 11.6109C13.2921 11.4157 13.2921 11.0991 13.0968 10.9038C12.1205 9.92756 10.538 9.92756 9.56168 10.9038L6.73318 13.7323C5.75691 14.7086 5.75691 16.2912 6.73318 17.2675C7.70933 18.2442 9.29203 18.2442 10.2688 17.2675L11.6828 15.8534C11.8781 15.6582 11.8781 15.3416 11.6828 15.1463C11.4876 14.9511 11.171 14.9511 10.9757 15.1464Z" fill="#9B94AF"/>
+          <path d="M17.2672 6.7322C16.2909 5.75593 14.7078 5.75593 13.7316 6.7322L12.035 8.42871C11.8398 8.62397 11.8398 8.94057 12.035 9.13583C12.2303 9.33109 12.5469 9.33109 12.7422 9.13583L14.4387 7.43932C15.0244 6.85356 15.9743 6.85356 16.5601 7.43932C17.1458 8.02505 17.1458 8.97448 16.5601 9.56021L13.4491 12.6713C12.8633 13.257 11.9139 13.257 11.3282 12.6713C11.1329 12.476 10.8163 12.476 10.6211 12.6713C10.4258 12.8665 10.4258 13.1831 10.6211 13.3784C11.5973 14.3546 13.1799 14.3546 14.1562 13.3784L17.2672 10.2673C18.2435 9.29108 18.2435 7.70847 17.2672 6.7322Z" fill="#9B94AF"/>
+          </g>
+          <defs>
+          <clipPath id="clip0_768_2102">
+          <rect width="12" height="12" fill="white" transform="translate(6 6)"/>
+          </clipPath>
+          </defs>
+          </svg>
         </div>
     </div>
     ${total>0?`<div class="card-progress">
       <div class="card-progress-label">${done}/${total} подзадач</div>
-      <div class="card-progress-bar"><div class="card-progress-fill" style="width:${pct}%"></div></div>
+      <div class="card-progress-bar">${listProgresdHtml.join('')}</div>
     </div>`:''}
     <div class="card-bottom">
       ${assigneeHTML}
@@ -1388,6 +1495,34 @@ function renderMobileTabs(){
     const b = el('mtab-'+col.id);
     if(b) b.textContent = state.cards.filter(c=>c.col===col.id).length;
   });
+}
+
+
+const dataLinkCard = () => {
+  const vewComplateElement = document.getElementById('toast');
+  document.querySelectorAll('.card-top-link').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      const dataLink = btn.getAttribute('data-link');
+
+      if(dataLink){
+        navigator.clipboard.writeText(dataLink)
+        .then(() => {
+          
+          vewComplateElement.textContent = 'Скопировано';
+          vewComplateElement.classList.add('show', 'ok');
+
+          setTimeout(() => {
+            vewComplateElement.classList.remove('show', 'ok');
+          }, 1500)
+        })
+      } else {
+          console.log('erro copy link');
+     
+      }
+    })
+  })
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1690,7 +1825,7 @@ function renderAssigneeList(){
     if(!m) return '';
     return `<div class="assignee-row" data-id="${esc(id)}">
       <div class="assignee-row-avatar">${m.avatar?`<img src="${esc(m.avatar)}" alt="">`:esc((m.name||'?')[0].toUpperCase())}</div>
-      <div style="flex:1">
+      <div  style="flex:0 1 100px">
         <div class="assignee-row-name">${esc(m.name)}</div>
         <div class="assignee-row-role">${esc(m.role)}</div>
       </div>
@@ -2148,7 +2283,6 @@ function applyAdminRestrictions(isUserAdmin) {
   const adminElements = document.querySelectorAll('.admin-only');
   adminElements.forEach(element => {
     if (isUserAdmin) {
-      console.log(isUserAdmin)
 
       element.classList.remove('disabled', 'is-readonly');
       element.disabled = false;
