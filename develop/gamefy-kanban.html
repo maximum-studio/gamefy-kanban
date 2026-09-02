@@ -420,6 +420,28 @@ input::placeholder {
 .field .f-link{
   background-color: var(--bg-light-dark);
 }
+.field-link-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.field-link-row input{
+  flex:1;
+  min-width:0;
+}
+/* кнопка копирования появляется, только когда ссылка на макет заполнена */
+.link-copy-btn{
+  display:none;
+  flex:0 0 auto;
+  padding:0;
+  border:none;
+  background:none;
+  line-height:0;
+  cursor:pointer;
+}
+.link-copy-btn.show{
+  display:block;
+}
 .field input{
   background-color: var(--bg-light-dark);
 }
@@ -775,6 +797,22 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 </head>
 <body>
 
+<!-- SVG-спрайт: иконка ссылки, одна на карточку и модалку -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="icon-link" viewBox="0 0 24 24">
+    <rect width="24" height="24" rx="12" fill="#3A2A60"/>
+    <g clip-path="url(#icon-link-clip)">
+      <path d="M10.9757 15.1464L9.56168 16.5604C8.97546 17.1466 8.02612 17.1466 7.44039 16.5605C6.85454 15.9746 6.85454 15.0252 7.44027 14.4395L10.2688 11.6109C10.8545 11.0252 11.804 11.0252 12.3897 11.6109C12.5849 11.8062 12.9015 11.8062 13.0968 11.6109C13.2921 11.4157 13.2921 11.0991 13.0968 10.9038C12.1205 9.92756 10.538 9.92756 9.56168 10.9038L6.73318 13.7323C5.75691 14.7086 5.75691 16.2912 6.73318 17.2675C7.70933 18.2442 9.29203 18.2442 10.2688 17.2675L11.6828 15.8534C11.8781 15.6582 11.8781 15.3416 11.6828 15.1463C11.4876 14.9511 11.171 14.9511 10.9757 15.1464Z" fill="#9B94AF"/>
+      <path d="M17.2672 6.7322C16.2909 5.75593 14.7078 5.75593 13.7316 6.7322L12.035 8.42871C11.8398 8.62397 11.8398 8.94057 12.035 9.13583C12.2303 9.33109 12.5469 9.33109 12.7422 9.13583L14.4387 7.43932C15.0244 6.85356 15.9743 6.85356 16.5601 7.43932C17.1458 8.02505 17.1458 8.97448 16.5601 9.56021L13.4491 12.6713C12.8633 13.257 11.9139 13.257 11.3282 12.6713C11.1329 12.476 10.8163 12.476 10.6211 12.6713C10.4258 12.8665 10.4258 13.1831 10.6211 13.3784C11.5973 14.3546 13.1799 14.3546 14.1562 13.3784L17.2672 10.2673C18.2435 9.29108 18.2435 7.70847 17.2672 6.7322Z" fill="#9B94AF"/>
+    </g>
+    <defs>
+      <clipPath id="icon-link-clip">
+        <rect width="12" height="12" fill="white" transform="translate(6 6)"/>
+      </clipPath>
+    </defs>
+  </symbol>
+</svg>
+
 <!-- HEADER -->
 <header class="header">
   <div class="header-left">
@@ -871,9 +909,14 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
         <label>Заголовок</label>
         <input type="text" class="admin-only" id="f-title" placeholder="Название задачи">
       </div>
-      <div class="field field-l1 admin-only">
+      <div class="field field-l1">
         <label>Ссылка на макет</label>
-        <input type="url" id="f-link" placeholder="https://figma.com/...  (необязательно)">
+        <div class="field-link-row">
+          <input type="url" class="admin-only" id="f-link" placeholder="https://figma.com/...  (необязательно)">
+          <button type="button" class="link-copy-btn" id="f-link-copy" title="Скопировать ссылку на макет">
+            <svg width="24" height="24" aria-hidden="true"><use href="#icon-link"/></svg>
+          </button>
+        </div>
       </div>
       <div class="row-2">
         <div class="field">
@@ -1407,8 +1450,6 @@ function renderBoard(){
   dataLinkCard()
 }
 
-const baseUrl = window.location.origin + window.location.pathname;
-
 function cardHTML(c){
   const member = c.assignees && c.assignees.length
     ? state.members.find(m=>m.id===c.assignees[0]) : null;
@@ -1455,6 +1496,12 @@ function cardHTML(c){
          <div class="card-assignee-name" style="color:var(--text-accent)">${assigneeCount} исполнителя</div>
          <div class="card-assignee-role">${esc(member?.name||'')}${assigneeCount>1?` +${assigneeCount-1}`:''}</div>
        </div>`;
+
+  const layoutLink = (c.link||'').trim();
+  const linkIconHTML = !layoutLink ? '' : `<div class="card-top-link" data-link="${esc(layoutLink)}">
+        <svg width="24" height="24" aria-hidden="true"><use href="#icon-link"/></svg>
+      </div>`;
+
   return `<div class="card ${isHotClass}" draggable="true" data-id="${esc(c.id)}">
     <div class="card-top">
       <div class="card-top-info">
@@ -1464,20 +1511,7 @@ function cardHTML(c){
           ${tagHot}
         </div>
       </div>
-      <div class="card-top-link" data-link="${baseUrl}?card=${esc(c.id)}">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="24" height="24" rx="12" fill="#3A2A60"/>
-          <g clip-path="url(#clip0_768_2102)">
-          <path d="M10.9757 15.1464L9.56168 16.5604C8.97546 17.1466 8.02612 17.1466 7.44039 16.5605C6.85454 15.9746 6.85454 15.0252 7.44027 14.4395L10.2688 11.6109C10.8545 11.0252 11.804 11.0252 12.3897 11.6109C12.5849 11.8062 12.9015 11.8062 13.0968 11.6109C13.2921 11.4157 13.2921 11.0991 13.0968 10.9038C12.1205 9.92756 10.538 9.92756 9.56168 10.9038L6.73318 13.7323C5.75691 14.7086 5.75691 16.2912 6.73318 17.2675C7.70933 18.2442 9.29203 18.2442 10.2688 17.2675L11.6828 15.8534C11.8781 15.6582 11.8781 15.3416 11.6828 15.1463C11.4876 14.9511 11.171 14.9511 10.9757 15.1464Z" fill="#9B94AF"/>
-          <path d="M17.2672 6.7322C16.2909 5.75593 14.7078 5.75593 13.7316 6.7322L12.035 8.42871C11.8398 8.62397 11.8398 8.94057 12.035 9.13583C12.2303 9.33109 12.5469 9.33109 12.7422 9.13583L14.4387 7.43932C15.0244 6.85356 15.9743 6.85356 16.5601 7.43932C17.1458 8.02505 17.1458 8.97448 16.5601 9.56021L13.4491 12.6713C12.8633 13.257 11.9139 13.257 11.3282 12.6713C11.1329 12.476 10.8163 12.476 10.6211 12.6713C10.4258 12.8665 10.4258 13.1831 10.6211 13.3784C11.5973 14.3546 13.1799 14.3546 14.1562 13.3784L17.2672 10.2673C18.2435 9.29108 18.2435 7.70847 17.2672 6.7322Z" fill="#9B94AF"/>
-          </g>
-          <defs>
-          <clipPath id="clip0_768_2102">
-          <rect width="12" height="12" fill="white" transform="translate(6 6)"/>
-          </clipPath>
-          </defs>
-          </svg>
-        </div>
+      ${linkIconHTML}
     </div>
     ${total>0?`<div class="card-progress">
       <div class="card-progress-label">${done}/${total} подзадач</div>
@@ -1523,6 +1557,19 @@ const dataLinkCard = () => {
       }
     })
   })
+}
+
+// Иконка копирования рядом с полем «Ссылка на макет»: видна, только когда поле заполнено
+function updateLinkCopyBtn(){
+  el('f-link-copy').classList.toggle('show', Boolean(el('f-link').value.trim()));
+}
+
+function copyLayoutLink(){
+  const link = el('f-link').value.trim();
+  if(!link) return;
+  navigator.clipboard.writeText(link)
+    .then(()  => toast('Скопировано','ok'))
+    .catch(() => toast('Не удалось скопировать','err'));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1718,6 +1765,7 @@ function openCardModal(id=null, colId='todo'){
   el('delete-card-btn').style.display = (id && isAdmin()) ? '' : 'none';
   el('f-title').value    = c ? c.title      : '';
   el('f-link').value     = c ? c.link||''   : '';
+  updateLinkCopyBtn();
   el('f-type').value     = c ? c.type||''   : '';
   el('f-col').value      = c ? c.col        : colId;
   el('f-desc').value     = c ? c.desc||''   : '';
@@ -2385,6 +2433,8 @@ function setupEvents(){
   el('sync-status').addEventListener('click', ()=> syncPull({force:true}));
 
   el('save-card-btn').addEventListener('click', saveCard);
+  el('f-link').addEventListener('input', updateLinkCopyBtn);
+  el('f-link-copy').addEventListener('click', copyLayoutLink);
   el('card-reload-btn').addEventListener('click', reloadConflictCard);
   el('delete-card-btn').addEventListener('click', deleteCard);
   el('subtask-add-btn').addEventListener('click', addSubtask);
