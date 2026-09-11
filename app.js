@@ -1216,7 +1216,8 @@ async function commit(mutate){
 // SETTINGS MODAL
 // ═══════════════════════════════════════════════════════
 function updateRoleBtn(){
-  const btn = el('gh-settings-btn');
+  // The label, not the button: writing textContent on the button would drop the icon
+  const btn = el('gh-settings-label');
     
     if (!role) { 
       if (btn) {
@@ -1306,6 +1307,9 @@ function setupEvents(){
     ov.addEventListener('click',e=>{
       if(e.target!==ov) return;
       if(ov.id==='github-overlay' && !role) return;
+      // The card modal keeps unsaved edits until «Save», so a stray click on the
+      // backdrop must not throw them away — ✕ and «Cancel» are the way out
+      if(ov.id==='card-overlay') return;
       closeOverlay(ov.id);
     });
   });

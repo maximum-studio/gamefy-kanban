@@ -57,7 +57,7 @@
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-text">—</span>
     </div>
-        <button class="btn btn-ghost admin-only btn-ghost-top-bnt" title="синхронизация">
+        <button class="btn btn-ghost admin-only btn-ghost-top-bnt" id="gh-settings-btn" title="синхронизация">
         <span>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
             <g clip-path="url(#clip0_444_4302)">
@@ -71,8 +71,8 @@
             </clipPath>
             </defs>
           </svg>
-      </span> <div id="gh-settings-btn">GitHub</div></button>
-    <button class="btn btn-ghost btn-ghost-top-bnt">
+      </span> <div id="gh-settings-label">GitHub</div></button>
+    <button class="btn btn-ghost btn-ghost-top-bnt" id="team-btn">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M10.0528 8.94133C9.95581 8.28246 9.6259 7.68017 9.12288 7.24373C8.61986 6.80728 7.97707 6.56559 7.31111 6.5625H6.69044C6.02449 6.56559 5.38169 6.80728 4.87868 7.24373C4.37566 7.68017 4.04574 8.28246 3.94878 8.94133L3.65128 11.0215C3.64177 11.0887 3.64805 11.1573 3.66962 11.2217C3.69119 11.2861 3.72745 11.3445 3.77553 11.3925C3.89219 11.5092 4.60794 12.1042 7.00136 12.1042C9.39478 12.1042 10.1088 11.5115 10.2272 11.3925C10.2753 11.3445 10.3115 11.2861 10.3331 11.2217C10.3547 11.1573 10.3609 11.0887 10.3514 11.0215L10.0528 8.94133Z" fill="#E6E6E6"/>
         <path d="M4.40983 6.88341C3.84606 7.40313 3.47924 8.10173 3.3715 8.86091L3.15567 10.3542C1.42317 10.3426 0.898166 9.71257 0.810666 9.58424C0.776843 9.53762 0.752707 9.48469 0.739682 9.42858C0.726657 9.37248 0.725008 9.31433 0.734833 9.25757L0.863166 8.53424C0.930029 8.15621 1.08706 7.79988 1.32095 7.49546C1.55484 7.19103 1.85869 6.9475 2.20673 6.7855C2.55477 6.6235 2.93674 6.54781 3.32026 6.56485C3.70378 6.5819 4.07753 6.69117 4.40983 6.88341Z" fill="#E6E6E6"/>
@@ -81,7 +81,7 @@
         <path d="M12.3957 4.66667C12.3959 4.87737 12.3545 5.08604 12.2739 5.28074C12.1934 5.47543 12.0752 5.65234 11.9262 5.80133C11.7772 5.95032 11.6003 6.06847 11.4056 6.14904C11.2109 6.2296 11.0023 6.27099 10.7916 6.27083C10.5367 6.27196 10.2854 6.21156 10.059 6.09477C9.83249 5.97798 9.63756 5.80825 9.49072 5.6C9.76881 5.14295 9.91611 4.61834 9.91656 4.08333C9.91694 3.84725 9.88754 3.61206 9.82906 3.38333C10.0674 3.20459 10.3508 3.09574 10.6475 3.06898C10.9442 3.04223 11.2425 3.09863 11.509 3.23186C11.7754 3.36509 11.9995 3.56989 12.1561 3.82331C12.3128 4.07673 12.3957 4.36875 12.3957 4.66667Z" fill="#E6E6E6"/>
         <path d="M7 6.27075C8.20812 6.27075 9.1875 5.29137 9.1875 4.08325C9.1875 2.87513 8.20812 1.89575 7 1.89575C5.79188 1.89575 4.8125 2.87513 4.8125 4.08325C4.8125 5.29137 5.79188 6.27075 7 6.27075Z" fill="#E6E6E6"/>
       </svg>
-      <span id="team-btn">Команда</span>
+      <span>Команда</span>
     </button>
   </div>
 </header>
@@ -453,32 +453,6 @@
       <button class="btn btn-danger-soft btn-sm btn-error" id="gh-disconnect-btn" style="display:none;margin-right:auto">Выйти</button>
       <button class="btn btn-ghost" data-close="github-overlay" id="login-cancel-btn" style="display:none">Отмена</button>
       <button class="btn btn-primary" id="gh-save-btn">Войти</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL: ADD MEMBER ══ -->
-<div class="overlay" id="add-member-overlay">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <h3 id="add-member-title">Новый участник</h3>
-      <button class="modal-close" data-close="add-member-overlay">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="field"><label>Имя</label><input type="text" id="m-name" placeholder="Иван Петров"></div>
-      <div class="field"><label>Ссылка на Telegram</label><input type="url" id="m-tg" placeholder="https://t.me/username"></div>
-      <div class="field">
-        <label>Роль</label>
-        <select id="m-role">
-          <option value="UX/UI Designer">UX/UI Designer</option>
-          <option value="Dev">Dev</option>
-        </select>
-      </div>
-      <div class="field"><label>Аватарка (URL)</label><input type="url" id="m-avatar" placeholder="https://...  (необязательно)"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" data-close="add-member-overlay">Отмена</button>
-      <button class="btn btn-primary" id="save-member-btn">Сохранить</button>
     </div>
   </div>
 </div>
