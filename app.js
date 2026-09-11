@@ -31,6 +31,8 @@ let editingMemberId = null;
 let confirmCb  = null;
 let activeMobileCol = 'todo';
 let subtasks   = [];
+let subtaskDragIndex    = null;  // index of the subtask row being dragged
+let editingSubtaskIndex = null;  // index of the subtask row being edited inline
 let isSaving   = false;
 
 // Auto-refresh
@@ -668,18 +670,124 @@ function reloadConflictCard(){
 
 function renderSubtasks(){
   const list = el('subtasks-list');
+  const admin = isAdmin();
   list.innerHTML = '';
+  editingSubtaskIndex = null;
   subtasks.forEach((s,i)=>{
     const item  = tpl('subtask-template');
     const check = slot(item,'check');
     const text  = slot(item,'text');
+    // dataset.index keeps the link to the array while the rows move around the DOM
+    item.dataset.index = i;
+    item.draggable = admin;
     check.checked = Boolean(s.done);
     check.addEventListener('change',()=>{ subtasks[i].done = check.checked; renderSubtasks(); });
     text.textContent = s.t;
     text.classList.toggle('done-text', Boolean(s.done));
+    text.addEventListener('dblclick',()=> startSubtaskEdit(item, i));
     slot(item,'del').addEventListener('click',()=>{ subtasks.splice(i,1); renderSubtasks(); });
+    item.addEventListener('dragstart', onSubtaskDragStart);
+    item.addEventListener('dragend',   onSubtaskDragEnd);
     list.appendChild(item);
   });
+}
+
+// Double click on the text swaps it for an input: Enter or blur saves, Escape cancels.
+// Like every other edit in the modal, it only touches the local buffer — «Save» writes it out.
+function startSubtaskEdit(item, i){
+  if(!isAdmin() || editingSubtaskIndex !== null) return;
+  editingSubtaskIndex = i;
+  const text = slot(item,'text');
+  const edit = slot(item,'edit');
+  item.draggable = false;   // a focused input must not turn into a drag
+  item.classList.add('editing');
+  text.hidden = true;
+  edit.hidden = false;
+  edit.value  = subtasks[i].t;
+  edit.focus();
+  edit.select();
+
+  // Enter fires keydown and then blur — the flag cuts off the second run
+  let done = false;
+  const finish = (save)=>{
+    if(done) return;
+    done = true;
+    const v = edit.value.trim();
+    editingSubtaskIndex = null;
+    if(save && v) subtasks[i].t = v;   // an empty title keeps the old one, the ✕ button is for deleting
+    if(!subtasks[i]){ renderSubtasks(); return; }
+    // The row goes back to normal in place: a full re-render here would rebuild the list
+    // during mousedown and the double click meant for a neighbouring row would be lost
+    text.textContent = subtasks[i].t;
+    edit.hidden = true;
+    text.hidden = false;
+    item.classList.remove('editing');
+    item.draggable = isAdmin();
+  };
+  edit.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ e.preventDefault(); finish(true); }
+    else if(e.key === 'Escape'){
+      e.preventDefault();
+      e.stopPropagation();   // Escape cancels the edit, it must not close the modal
+      finish(false);
+    }
+  });
+  edit.addEventListener('blur', ()=> finish(true));
+}
+
+// ── subtask reorder (drag & drop inside the modal) ──
+function onSubtaskDragStart(e){
+  if(!isAdmin() || editingSubtaskIndex !== null){ e.preventDefault(); return; }
+  const t = e.currentTarget;
+  subtaskDragIndex = Number(t.dataset.index);
+  if(e.dataTransfer){
+    e.dataTransfer.effectAllowed = 'move';
+    try{ e.dataTransfer.setData('text/plain', String(subtaskDragIndex)); }catch{}
+  }
+  setTimeout(()=>{ if(t.isConnected) t.classList.add('dragging'); }, 0);
+}
+
+function onSubtaskDragEnd(e){
+  if(e.currentTarget.isConnected) e.currentTarget.classList.remove('dragging');
+  // Dropped outside the list: dragover has already moved the row, so redraw from the array.
+  // After a real drop subtaskDragIndex is already null and there is nothing to restore.
+  if(subtaskDragIndex !== null){
+    subtaskDragIndex = null;
+    renderSubtasks();
+  }
+}
+
+function onSubtaskDragOver(e){
+  if(subtaskDragIndex === null) return;
+  e.preventDefault();
+  if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  const list = el('subtasks-list');
+  const dragging = list.querySelector('.subtask-item.dragging');
+  if(!dragging) return;
+  const after = getSubtaskAfterElement(list, e.clientY);
+  if(after == null) list.appendChild(dragging);
+  else              list.insertBefore(dragging, after);
+}
+
+function getSubtaskAfterElement(list, y){
+  const rows = [...list.querySelectorAll('.subtask-item:not(.dragging)')];
+  return rows.reduce((closest, child)=>{
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if(offset < 0 && offset > closest.offset) return {offset, element: child};
+    return closest;
+  }, {offset: Number.NEGATIVE_INFINITY}).element;
+}
+
+// The DOM already shows the new order — the array is rebuilt from it
+function onSubtaskDrop(e){
+  if(subtaskDragIndex === null) return;
+  e.preventDefault();
+  subtaskDragIndex = null;
+  const rows  = [...el('subtasks-list').querySelectorAll('.subtask-item')];
+  const order = rows.map(r => subtasks[Number(r.dataset.index)]);
+  if(order.length === subtasks.length && order.every(Boolean)) subtasks = order;
+  renderSubtasks();
 }
 
 let selectedAssignees = [];
@@ -1242,6 +1350,8 @@ function setupEvents(){
   el('card-reload-btn').addEventListener('click', reloadConflictCard);
   el('delete-card-btn').addEventListener('click', deleteCard);
   el('subtask-add-btn').addEventListener('click', addSubtask);
+  el('subtasks-list').addEventListener('dragover', onSubtaskDragOver);
+  el('subtasks-list').addEventListener('drop',     onSubtaskDrop);
   el('subtask-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();addSubtask();} });
   el('add-member-btn').addEventListener('click', openAddMemberModal);
   el('assignee-add-btn').addEventListener('click', ()=>{
@@ -1273,6 +1383,7 @@ function setupEvents(){
 }
 
 function addSubtask(){
+  if(!isAdmin()) return;
   const inp=el('subtask-input');
   const v=inp.value.trim();
   if(!v) return;
