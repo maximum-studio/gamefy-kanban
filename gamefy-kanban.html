@@ -92,6 +92,11 @@
     <div class="stats-done-num" id="done-count">0</div>
     <div class="stats-done-label">За всё время<br>выполнено задач</div>
   </div>
+  <div class="tasks-filter">
+    <p>Filter: </p>
+    <div class="filter-otem _active" data-mode="filter-design">Design</div>
+    <div class="filter-otem" data-mode="filter-dev">Dev</div>
+  </div>
   <!-- 
   <div class="progress-section">
     <div class="progress-label" id="progress-label">1 часть</div>
@@ -165,14 +170,24 @@
   <span class="card-tag"></span>
 </template>
 
+<template id="card-code-template">
+  <span class="card-code"></span>
+</template>
+
 <template id="card-tag-hot-template">
   <div class="cart-tag-hot">Priority</div>
 </template>
 
-<template id="card-link-template">
-  <div class="card-top-link">
-    <svg width="24" height="24" aria-hidden="true"><use href="#icon-link"/></svg>
+<template id="card-link-share-template">
+  <div class="card-top-share-link" data-share-link=""> 
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 preview-icon"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
   </div>
+</template>
+
+<template id="card-link-template">
+  <a href="" target="_blank" class="card-top-link">
+    <svg width="24" height="24" aria-hidden="true"><use href="#icon-link"/></svg>
+  </a>
 </template>
 
 <template id="card-progress-seg-template">
