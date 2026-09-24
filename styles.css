@@ -297,10 +297,24 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
 .card-title{font-size: 15px;font-weight:var(--h3-weight);line-height:1.4;flex:1;margin-top:14px}
 .card-title-tags{
   display: flex;
+  align-items: center;
   gap: 5px;
 }
 
+.card-top-actions{
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.card-top-share-link{
+    flex: 0 1 24px;
+    cursor: pointer;
+}
+
 .card-top-link{
+  align-items: center;
+  display: flex;
   cursor: pointer;
 }
 

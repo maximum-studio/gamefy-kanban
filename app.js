@@ -338,20 +338,27 @@ function cardNode(c){
 
   if(c.hot) tags.appendChild(tpl('card-tag-hot-template'));
 
-  const layoutLink = (c.link||'').trim();
+  // 1. Работаем ТОЛЬКО с actionsContainer
+  const actionsContainer = card.querySelector('.card-top-actions');
+
+  if (actionsContainer) {
+    // Вставляем кнопку шаринга
+    attachCardShareButton(actionsContainer, c.id);
+  }
+
+  // 2. Обрабатываем ссылку
+  const layoutLink = (c.link || '').trim();
 
   if(layoutLink){
     const linkIcon = tpl('card-link-template');
-
     linkIcon.href = layoutLink; 
     linkIcon.setAttribute('rel', 'noopener noreferrer');
+
+    // Заменяем слот на иконку ссылки
     slot(card,'link').replaceWith(linkIcon);
   } else {
     slot(card,'link').remove();
   }
-
-  const topContainer = card.querySelector('.card-top') || card;
-  attachCardShareButton(topContainer, c.id);
 
   if(total > 0){
     slot(card,'progress-label').textContent = `${done}/${total} подзадач`;
@@ -452,19 +459,18 @@ function attachCardShareButton(targetContainer, cardId) {
 
   if (shareBtn) {
     shareBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); // Предотвращаем открытие модалки/перетаскивание, если кнопка внутри карточки на доске
+      e.stopPropagation();
 
-      // 1. Формируем URL с параметром ?card=ID_карточки
       const shareUrl = new URL(window.location.href);
       shareUrl.searchParams.set('card', cardId);
 
-      // 2. Копируем в буфер обмена
       navigator.clipboard.writeText(shareUrl.toString())
-      .then(() => toast('Ссылка на задачу скопирована', 'ok'))
-      .catch(() => toast('Не удалось скопировать', 'err'));
+        .then(() => toast('Ссылка на задачу скопирована', 'ok'))
+        .catch(() => toast('Не удалось скопировать', 'err'));
     });
 
-    targetContainer.appendChild(clone);
+    // Вставляем кнопку В НАЧАЛО контейнера
+    targetContainer.prepend(clone);
   }
 }
 
@@ -1565,3 +1571,9 @@ function toast(msg,type=''){
   t.className='toast show'+(type?' '+type:'');
   clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2500);
 }
+
+
+
+
+
+
