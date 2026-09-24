@@ -231,51 +231,68 @@ function renderStats(){
   });
 }
 
-function renderBoard(){
+// Колонки, к которым применяется фильтр
+const FILTERED_COLS = ['todo', 'doing', 'review'];
 
+function renderBoard() {
   const board = el('board');
   board.innerHTML = '';
-  COLS.forEach(col => {
-    const colCards = state.cards.filter(c=>c.col===col.id);
-    const column = tpl('column-template');
-    column.classList.toggle('mobile-active', col.id===activeMobileCol);
-    column.dataset.col = col.id;
-    slot(column,'indicator').style.background = col.color;
-    slot(column,'name').textContent  = col.label;
-    slot(column,'count').textContent = colCards.length;
-    slot(column,'add').dataset.col   = col.id;
 
-    const list = slot(column,'cards');
-    list.id = 'cards-'+col.id;
-    if(colCards.length){
-      slot(list,'empty').remove();
+  COLS.forEach(col => {
+    // 1. Получаем все карточки текущей колонки
+    let colCards = state.cards.filter(c => c.col === col.id);
+
+    // 2. Если включен фильтр (activeFilter) И текущая колонка входит в список фильтруемых — отсекаем лишние
+    if (activeFilter && FILTERED_COLS.includes(col.id)) {
+      colCards = colCards.filter(c => c.type === activeFilter);
+    }
+
+    const column = tpl('column-template');
+    column.classList.toggle('mobile-active', col.id === activeMobileCol);
+    column.dataset.col = col.id;
+    slot(column, 'indicator').style.background = col.color;
+    slot(column, 'name').textContent  = col.label;
+    slot(column, 'count').textContent = colCards.length; // Счётчик учитывает отфильтрованные карточки
+    slot(column, 'add').dataset.col   = col.id;
+
+    const list = slot(column, 'cards');
+    list.id = 'cards-' + col.id;
+
+    if (colCards.length) {
+      slot(list, 'empty').remove();
       colCards.forEach(c => list.appendChild(cardNode(c)));
     }
+
     board.appendChild(column);
   });
 
+  // Обработка клика по кнопке "+" добавления задачи
   board.querySelectorAll('.col-add').forEach(btn =>
     btn.addEventListener('click', () => openCardModal(null, btn.dataset.col))
   );
+
+  // Обработка событий карточек
   board.querySelectorAll('.card').forEach(card => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.card-top-link')) {
+      // Игнорируем открытие модалки, если кликнули по внешней ссылке ИЛИ по кнопке "Поделиться"
+      if (e.target.closest('.card-top-link') || e.target.closest('.card-top-share-link')) {
         return;
       }
       openCardModal(card.dataset.id);
-    })
+    });
+
     card.addEventListener('dragstart', onDragStart);
     card.addEventListener('dragend',   onDragEnd);
   });
+
+  // Обработка Drag & Drop
   board.querySelectorAll('.cards-list, .column').forEach(zone => {
     zone.addEventListener('dragover',  onDragOver);
     zone.addEventListener('dragleave', onDragLeave);
     zone.addEventListener('drop',      onDrop);
   });
 
-  checkUrlCardParam()
-
-  dataLinkCard()
+  checkUrlCardParam();
 }
 
 function cardNode(c){
@@ -293,18 +310,51 @@ function cardNode(c){
   slot(card,'title').textContent = c.title;
 
   const tags = slot(card,'tags');
+
   if(c.type==='design' || c.type==='dev'){
     const tag = tpl('card-tag-template');
     tag.classList.add(c.type==='design' ? 'tag-design' : 'tag-dev');
     tag.textContent = c.type==='design' ? 'Design' : 'Dev';
     tags.appendChild(tag);
   }
+
+  if(c.type === 'dev'){
+    const codeTag = tpl('card-code-template');
+
+    const codeValue = c.code || c.id;
+    codeTag.textContent = codeValue;
+    codeTag.dataset.code = codeValue;
+
+    codeTag.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      navigator.clipboard.writeText(codeValue)
+        .then(() => toast('Код задачи скопирован', 'ok'))
+        .catch(() => toast('Не удалось скопировать код', 'err'));
+    });
+
+    tags.appendChild(codeTag);
+  }
+
   if(c.hot) tags.appendChild(tpl('card-tag-hot-template'));
 
-  const layoutLink = (c.link||'').trim();
+  // 1. Работаем ТОЛЬКО с actionsContainer
+  const actionsContainer = card.querySelector('.card-top-actions');
+
+  if (actionsContainer) {
+    // Вставляем кнопку шаринга
+    attachCardShareButton(actionsContainer, c.id);
+  }
+
+  // 2. Обрабатываем ссылку
+  const layoutLink = (c.link || '').trim();
+
   if(layoutLink){
     const linkIcon = tpl('card-link-template');
-    linkIcon.dataset.link = layoutLink;
+    linkIcon.href = layoutLink; 
+    linkIcon.setAttribute('rel', 'noopener noreferrer');
+
+    // Заменяем слот на иконку ссылки
     slot(card,'link').replaceWith(linkIcon);
   } else {
     slot(card,'link').remove();
@@ -356,6 +406,79 @@ function renderMobileTabs(){
     if(b) b.textContent = state.cards.filter(c=>c.col===col.id).length;
   });
 }
+
+
+// filter
+let activeFilter = null;
+
+function initTagFilters() {
+  const filterBtns = document.querySelectorAll('[data-mode^="filter-"]');
+
+  filterBtns.forEach(btn => {
+   
+    btn.classList.remove('_active');
+
+    btn.addEventListener('click', () => {
+      //  data-mode ("filter-design" -> "design", "filter-dev" -> "dev")
+      const filterType = btn.dataset.mode.replace('filter-', '');
+
+      if (activeFilter === filterType) {
+       
+        activeFilter = null;
+        btn.classList.remove('_active');
+      } else {
+      
+        activeFilter = filterType;
+        filterBtns.forEach(b => b.classList.remove('_active'));
+        btn.classList.add('_active');
+      }
+
+      renderBoard();
+    });
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initTagFilters();
+});
+
+
+
+
+
+
+function attachCardShareButton(targetContainer, cardId) {
+  if (!targetContainer || !cardId) return;
+
+  const template = document.getElementById('card-link-share-template');
+  if (!template) return;
+
+  // Клонируем содержимое шаблона
+  const clone = template.content.cloneNode(true);
+  const shareBtn = clone.querySelector('[data-share-link]');
+
+  if (shareBtn) {
+    shareBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      const shareUrl = new URL(window.location.href);
+      shareUrl.searchParams.set('card', cardId);
+
+      navigator.clipboard.writeText(shareUrl.toString())
+        .then(() => toast('Ссылка на задачу скопирована', 'ok'))
+        .catch(() => toast('Не удалось скопировать', 'err'));
+    });
+
+    // Вставляем кнопку В НАЧАЛО контейнера
+    targetContainer.prepend(clone);
+  }
+}
+
+
+
+
+
+
 
 
 const dataLinkCard = () => {
@@ -1403,6 +1526,7 @@ function closeOverlay(id){
   el(id).classList.remove('open'); 
   flushPendingRemote(); 
 
+  
   const url = new URL(window.location);
   url.searchParams.delete('card');
   history.replaceState(null, '', url);
@@ -1447,3 +1571,9 @@ function toast(msg,type=''){
   t.className='toast show'+(type?' '+type:'');
   clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2500);
 }
+
+
+
+
+
+
