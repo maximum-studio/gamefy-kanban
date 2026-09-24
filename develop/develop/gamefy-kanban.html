@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✅</text></svg>">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Kanban | Gamefy Task Manager</title>
+<link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+
+<!-- SVG sprite: the link icon, shared by the card and the modal -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="icon-link" viewBox="0 0 24 24">
+    <rect width="24" height="24" rx="12" fill="#3A2A60"/>
+    <g clip-path="url(#icon-link-clip)">
+      <path d="M10.9757 15.1464L9.56168 16.5604C8.97546 17.1466 8.02612 17.1466 7.44039 16.5605C6.85454 15.9746 6.85454 15.0252 7.44027 14.4395L10.2688 11.6109C10.8545 11.0252 11.804 11.0252 12.3897 11.6109C12.5849 11.8062 12.9015 11.8062 13.0968 11.6109C13.2921 11.4157 13.2921 11.0991 13.0968 10.9038C12.1205 9.92756 10.538 9.92756 9.56168 10.9038L6.73318 13.7323C5.75691 14.7086 5.75691 16.2912 6.73318 17.2675C7.70933 18.2442 9.29203 18.2442 10.2688 17.2675L11.6828 15.8534C11.8781 15.6582 11.8781 15.3416 11.6828 15.1463C11.4876 14.9511 11.171 14.9511 10.9757 15.1464Z" fill="#9B94AF"/>
+      <path d="M17.2672 6.7322C16.2909 5.75593 14.7078 5.75593 13.7316 6.7322L12.035 8.42871C11.8398 8.62397 11.8398 8.94057 12.035 9.13583C12.2303 9.33109 12.5469 9.33109 12.7422 9.13583L14.4387 7.43932C15.0244 6.85356 15.9743 6.85356 16.5601 7.43932C17.1458 8.02505 17.1458 8.97448 16.5601 9.56021L13.4491 12.6713C12.8633 13.257 11.9139 13.257 11.3282 12.6713C11.1329 12.476 10.8163 12.476 10.6211 12.6713C10.4258 12.8665 10.4258 13.1831 10.6211 13.3784C11.5973 14.3546 13.1799 14.3546 14.1562 13.3784L17.2672 10.2673C18.2435 9.29108 18.2435 7.70847 17.2672 6.7322Z" fill="#9B94AF"/>
+    </g>
+    <defs>
+      <clipPath id="icon-link-clip">
+        <rect width="12" height="12" fill="white" transform="translate(6 6)"/>
+      </clipPath>
+    </defs>
+  </symbol>
+  <!-- "in progress" icon for the team member row -->
+  <symbol id="icon-tasks" viewBox="0 0 8 8" fill="none">
+    <path d="M5.95898 0.0317383C6.02917 0.0101407 6.09828 0.0252814 6.15039 0.0571289C6.20474 0.0903875 6.25105 0.146151 6.2666 0.215332L6.49023 1.09033V1.09229C6.49048 1.0931 6.49089 1.09406 6.49121 1.09521C6.49184 1.09749 6.49232 1.1005 6.49316 1.104C6.49491 1.11127 6.49727 1.12148 6.49902 1.1333C6.50242 1.15621 6.50543 1.18945 6.5 1.22607C6.49443 1.26325 6.47936 1.30803 6.44531 1.34717C6.41123 1.38632 6.36392 1.41202 6.30566 1.42432L6.30664 1.42529L5.42676 1.64893L5.42578 1.64795C5.35442 1.67138 5.28352 1.65586 5.23047 1.62354C5.17469 1.58945 5.12664 1.53113 5.1123 1.45947C5.08468 1.32088 5.17256 1.20376 5.29395 1.14307L5.30371 1.13721L5.31445 1.13525L5.5791 1.06885C4.52472 0.492031 3.22914 0.531547 2.20801 1.18799L2.20605 1.18994C2.08668 1.26157 1.92572 1.24244 1.84473 1.10791C1.7734 0.989041 1.79182 0.828876 1.9248 0.747559L2.16602 0.605957C3.3182 -0.0140251 4.70355 0.00407734 5.83789 0.611816L5.76953 0.345215V0.344238C5.74587 0.272647 5.76245 0.201121 5.79492 0.147949C5.82901 0.0921735 5.88733 0.044116 5.95898 0.0297852V0.0317383Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
+    <path d="M0.388672 1.61377L0.389648 1.61279L1.27637 1.70752H1.27734L1.27832 1.7085H1.29004C1.29728 1.70914 1.30716 1.7102 1.31836 1.7124C1.3403 1.71672 1.37101 1.72618 1.40234 1.74463C1.43432 1.76349 1.4673 1.79254 1.49023 1.83643C1.5132 1.88044 1.52303 1.93281 1.51855 1.9917V1.99463L1.41895 1.98389L1.51758 1.99463L1.42188 2.85889L1.4209 2.86768C1.3977 2.98344 1.30071 3.09205 1.16309 3.09229H1.13672L1.12695 3.09033C1.00612 3.06616 0.897844 2.94615 0.919922 2.80615H0.918945L0.930664 2.68506C0.746879 3.10433 0.654321 3.56336 0.654297 4.03174C0.654297 4.59016 0.785852 5.13539 1.04688 5.61572L1.16699 5.81787L1.16797 5.8208C1.23962 5.94028 1.22078 6.10122 1.08594 6.18213C0.966486 6.2536 0.805457 6.23387 0.724609 6.09912C0.348132 5.47687 0.134766 4.77111 0.134766 4.03174C0.134798 3.37627 0.305638 2.73623 0.618164 2.1626L0.335938 2.13135L0.330078 2.13037C0.193786 2.10758 0.0746932 1.98583 0.104492 1.83643H0.105469C0.116659 1.7728 0.144332 1.71069 0.195312 1.6665C0.247938 1.6209 0.315787 1.60325 0.388672 1.61377Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
+    <path d="M6.88672 1.89844C7.00619 1.82675 7.16712 1.84564 7.24805 1.98047L7.38086 2.21777C7.67409 2.77986 7.83786 3.40077 7.83789 4.04785C7.83789 4.71839 7.65231 5.37274 7.3252 5.94824L7.63672 5.98047L7.64258 5.98145C7.77891 6.00417 7.8979 6.12597 7.86816 6.27539C7.84376 6.39743 7.74206 6.5 7.59375 6.5H7.58301V6.49805L6.6875 6.40332H6.68164V6.40234C6.54734 6.37987 6.43092 6.26166 6.45605 6.11523L6.55078 5.20508L6.55176 5.19922C6.57759 5.04542 6.70812 4.97169 6.82617 4.97168C6.90366 4.97168 6.97363 5.0054 7.01953 5.06543C7.06463 5.12443 7.08042 5.20073 7.06934 5.27832L7.06348 5.32324C7.22974 4.92047 7.31836 4.48856 7.31836 4.04785C7.31833 3.40987 7.14717 2.78916 6.80664 2.2627L6.80469 2.25977C6.73301 2.14031 6.75194 1.97938 6.88672 1.89844Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
+    <path d="M2.73926 6.46191C2.81107 6.45227 2.87774 6.46967 2.92969 6.51465C2.98151 6.55956 3.01069 6.62278 3.02148 6.6875C3.04694 6.84024 2.94031 6.98047 2.77832 6.98047V6.97949L2.48633 7.00098C3.52657 7.53554 4.78337 7.48462 5.78027 6.84375L5.7832 6.8418C5.90265 6.77036 6.06369 6.79007 6.14453 6.9248C6.21562 7.04358 6.19616 7.20191 6.06348 7.2832L6.06445 7.28418C4.88554 8.03868 3.39234 8.08388 2.17188 7.4248L2.19043 7.67285H2.18945C2.20931 7.822 2.10506 7.95605 1.94629 7.95605H1.93066C1.86494 7.95605 1.80176 7.93028 1.75488 7.88965C1.70896 7.84982 1.67373 7.78993 1.67188 7.71777L1.6709 7.71875L1.60645 6.80664V6.80566C1.59996 6.69188 1.6495 6.61648 1.70801 6.57324C1.73493 6.55337 1.76157 6.54182 1.78125 6.53516C1.79126 6.53177 1.80002 6.52885 1.80664 6.52734C1.80961 6.52667 1.81231 6.52677 1.81445 6.52637C1.8156 6.52616 1.81749 6.52553 1.81836 6.52539H1.82031L1.82715 6.52441L2.73926 6.45996V6.46191Z" fill="#FBBF24" stroke="#FBBF24" stroke-width="0.2"/>
+  </symbol>
+  <!-- grip for dragging a subtask -->
+  <symbol id="icon-grip" viewBox="0 0 10 16" fill="none">
+    <circle cx="3" cy="3"  r="1.3" fill="currentColor"/>
+    <circle cx="7" cy="3"  r="1.3" fill="currentColor"/>
+    <circle cx="3" cy="8"  r="1.3" fill="currentColor"/>
+    <circle cx="7" cy="8"  r="1.3" fill="currentColor"/>
+    <circle cx="3" cy="13" r="1.3" fill="currentColor"/>
+    <circle cx="7" cy="13" r="1.3" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-slot" id="logo-slot" title="Логотип (замените SVG)">
+      <span>SVG</span>
+    </div>
+    <div class="header-title">Team Kanban <span>| Gamefy Task Manager</span></div>
+  </div>
+  <div class="header-right">
+    <div class="sync-status" id="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-text">—</span>
+    </div>
+        <button class="btn btn-ghost admin-only btn-ghost-top-bnt" id="gh-settings-btn" title="синхронизация">
+        <span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g clip-path="url(#clip0_444_4302)">
+            <path d="M8.69258 13.3903C8.64609 13.3629 8.59688 13.3356 8.55039 13.3082L8.26328 13.4313C7.7 13.6719 7.04648 13.4532 6.74023 12.9227L6.24805 12.0696C5.9418 11.5391 6.08125 10.8637 6.5707 10.4946L6.81953 10.3086C6.81953 10.2813 6.81953 10.2539 6.81953 10.2266C6.81953 10.1993 6.81953 10.1719 6.81953 10.1446L6.5707 9.95863C6.08125 9.58949 5.94453 8.9141 6.24805 8.38363L6.74023 7.5305C6.88789 7.27621 7.12031 7.0848 7.39648 6.99183C6.71562 6.68011 5.97461 6.51878 5.22539 6.52152C2.34063 6.51878 0 8.85941 0 11.7442V13.259C0 13.6692 0.330859 14 0.741016 14H8.80469C8.76641 13.9043 8.7418 13.8032 8.72813 13.6993L8.69258 13.3903Z" fill="#E6E6E6"/>
+            <path d="M5.22529 5.73672C6.80944 5.73672 8.09365 4.45251 8.09365 2.86836C8.09365 1.28421 6.80944 0 5.22529 0C3.64114 0 2.35693 1.28421 2.35693 2.86836C2.35693 4.45251 3.64114 5.73672 5.22529 5.73672Z" fill="#E6E6E6"/>
+            <path d="M13.8223 11.107L13.2344 10.6667C13.2809 10.3769 13.2809 10.0789 13.2344 9.78901L13.8223 9.34878C14.0027 9.21479 14.0519 8.96597 13.9398 8.76909L13.4476 7.91597C13.3355 7.72183 13.0949 7.6398 12.8871 7.73003L12.2117 8.01714C11.982 7.8312 11.725 7.68354 11.4516 7.5769L11.3641 6.84683C11.3367 6.62261 11.148 6.45581 10.9211 6.45581H9.93398C9.70976 6.45581 9.51835 6.62534 9.49101 6.84683L9.40351 7.5769C9.12734 7.68354 8.87304 7.8312 8.64335 8.01714L7.96796 7.73003C7.76015 7.64253 7.51952 7.72183 7.40741 7.91597L6.91523 8.76909C6.80312 8.96323 6.85234 9.21206 7.0328 9.34878L7.6207 9.78901C7.57421 10.0789 7.57421 10.3769 7.6207 10.6667L7.0328 11.107C6.85234 11.2437 6.80312 11.4925 6.91523 11.6867L7.40741 12.5398C7.51952 12.7339 7.76015 12.816 7.96796 12.7285L8.64335 12.4386C8.87304 12.6246 9.13007 12.7722 9.40351 12.8789L9.49101 13.6089C9.51835 13.8332 9.70702 14 9.93398 14H10.9211C11.1453 14 11.3367 13.8304 11.3641 13.6089L11.4516 12.8789C11.725 12.7722 11.982 12.6246 12.2117 12.4386L12.8871 12.7257C13.0949 12.8132 13.3355 12.7339 13.4476 12.5371L13.9398 11.6839C14.0519 11.4925 14.0027 11.2437 13.8223 11.107ZM10.4262 11.2929C9.83827 11.2929 9.35976 10.8144 9.35976 10.2265C9.35976 9.63862 9.83827 9.16011 10.4262 9.16011C11.0141 9.16011 11.4926 9.63862 11.4926 10.2265C11.4926 10.8144 11.0141 11.2929 10.4262 11.2929Z" fill="#E6E6E6"/>
+            </g>
+            <defs>
+            <clipPath id="clip0_444_4302">
+            <rect width="14" height="14" fill="white"/>
+            </clipPath>
+            </defs>
+          </svg>
+      </span> <div id="gh-settings-label">GitHub</div></button>
+    <button class="btn btn-ghost btn-ghost-top-bnt" id="team-btn">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10.0528 8.94133C9.95581 8.28246 9.6259 7.68017 9.12288 7.24373C8.61986 6.80728 7.97707 6.56559 7.31111 6.5625H6.69044C6.02449 6.56559 5.38169 6.80728 4.87868 7.24373C4.37566 7.68017 4.04574 8.28246 3.94878 8.94133L3.65128 11.0215C3.64177 11.0887 3.64805 11.1573 3.66962 11.2217C3.69119 11.2861 3.72745 11.3445 3.77553 11.3925C3.89219 11.5092 4.60794 12.1042 7.00136 12.1042C9.39478 12.1042 10.1088 11.5115 10.2272 11.3925C10.2753 11.3445 10.3115 11.2861 10.3331 11.2217C10.3547 11.1573 10.3609 11.0887 10.3514 11.0215L10.0528 8.94133Z" fill="#E6E6E6"/>
+        <path d="M4.40983 6.88341C3.84606 7.40313 3.47924 8.10173 3.3715 8.86091L3.15567 10.3542C1.42317 10.3426 0.898166 9.71257 0.810666 9.58424C0.776843 9.53762 0.752707 9.48469 0.739682 9.42858C0.726657 9.37248 0.725008 9.31433 0.734833 9.25757L0.863166 8.53424C0.930029 8.15621 1.08706 7.79988 1.32095 7.49546C1.55484 7.19103 1.85869 6.9475 2.20673 6.7855C2.55477 6.6235 2.93674 6.54781 3.32026 6.56485C3.70378 6.5819 4.07753 6.69117 4.40983 6.88341Z" fill="#E6E6E6"/>
+        <path d="M13.2648 9.25757C13.2747 9.31433 13.273 9.37248 13.26 9.42858C13.247 9.48469 13.2228 9.53762 13.189 9.58424C13.1015 9.71257 12.5765 10.3426 10.844 10.3542L10.6282 8.86091C10.5204 8.10173 10.1536 7.40313 9.58984 6.88341C9.92214 6.69117 10.2959 6.5819 10.6794 6.56485C11.0629 6.54781 11.4449 6.6235 11.7929 6.7855C12.141 6.9475 12.4448 7.19103 12.6787 7.49546C12.9126 7.79988 13.0696 8.15621 13.1365 8.53424L13.2648 9.25757Z" fill="#E6E6E6"/>
+        <path d="M4.509 5.6C4.36217 5.80825 4.16723 5.97798 3.94076 6.09477C3.71429 6.21156 3.46298 6.27196 3.20817 6.27083C2.95399 6.27083 2.70344 6.21043 2.47718 6.09461C2.25092 5.97878 2.05543 5.81084 1.9068 5.60464C1.75818 5.39844 1.66068 5.15987 1.62235 4.90859C1.58402 4.65731 1.60594 4.40052 1.68632 4.15938C1.7667 3.91825 1.90324 3.69966 2.08467 3.52164C2.2661 3.34362 2.48724 3.21126 2.72986 3.13547C2.97248 3.05968 3.22964 3.04263 3.48014 3.08572C3.73065 3.12882 3.96732 3.23082 4.17067 3.38333C4.11218 3.61206 4.08278 3.84725 4.08317 4.08333C4.08362 4.61834 4.23091 5.14295 4.509 5.6Z" fill="#E6E6E6"/>
+        <path d="M12.3957 4.66667C12.3959 4.87737 12.3545 5.08604 12.2739 5.28074C12.1934 5.47543 12.0752 5.65234 11.9262 5.80133C11.7772 5.95032 11.6003 6.06847 11.4056 6.14904C11.2109 6.2296 11.0023 6.27099 10.7916 6.27083C10.5367 6.27196 10.2854 6.21156 10.059 6.09477C9.83249 5.97798 9.63756 5.80825 9.49072 5.6C9.76881 5.14295 9.91611 4.61834 9.91656 4.08333C9.91694 3.84725 9.88754 3.61206 9.82906 3.38333C10.0674 3.20459 10.3508 3.09574 10.6475 3.06898C10.9442 3.04223 11.2425 3.09863 11.509 3.23186C11.7754 3.36509 11.9995 3.56989 12.1561 3.82331C12.3128 4.07673 12.3957 4.36875 12.3957 4.66667Z" fill="#E6E6E6"/>
+        <path d="M7 6.27075C8.20812 6.27075 9.1875 5.29137 9.1875 4.08325C9.1875 2.87513 8.20812 1.89575 7 1.89575C5.79188 1.89575 4.8125 2.87513 4.8125 4.08325C4.8125 5.29137 5.79188 6.27075 7 6.27075Z" fill="#E6E6E6"/>
+      </svg>
+      <span>Команда</span>
+    </button>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stats-done">
+    <div class="stats-done-num" id="done-count">0</div>
+    <div class="stats-done-label">За всё время<br>выполнено задач</div>
+  </div>
+  <div class="tasks-filter">
+    <p>Filter: </p>
+    <div class="filter-otem _active" data-mode="filter-design">Design</div>
+    <div class="filter-otem" data-mode="filter-dev">Dev</div>
+  </div>
+  <!-- 
+  <div class="progress-section">
+    <div class="progress-label" id="progress-label">1 часть</div>
+    <div class="progress-track" id="progress-track">
+      <div class="progress-seg" data-i="0"></div>
+      <div class="progress-seg" data-i="1"></div>
+      <div class="progress-seg" data-i="2"></div>
+      <div class="progress-seg" data-i="3"></div>
+      <div class="progress-seg" data-i="4"></div>
+    </div>
+  </div>
+  -->
+</div>
+
+
+<!-- MOBILE TABS -->
+<div class="mobile-tabs" id="mobile-tabs">
+  <button class="mobile-tab active" data-col="todo">To Do<span class="mobile-tab-badge" id="mtab-todo">0</span></button>
+  <button class="mobile-tab" data-col="doing">Doing <span class="mobile-tab-badge" id="mtab-doing">0</span></button>
+  <button class="mobile-tab" data-col="review">Review <span class="mobile-tab-badge" id="mtab-review">0</span></button>
+  <button class="mobile-tab" data-col="done">Done <span class="mobile-tab-badge" id="mtab-done">0</span></button>
+</div>
+
+<!-- BOARD -->
+<div id="board-wrap">
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+</div>
+
+<!-- Card template: the data is filled in by app.js -->
+<template id="card-template">
+  <div class="card" draggable="true">
+    <div class="card-top">
+      <div class="card-top-info">
+        <div class="card-title" data-slot="title"></div>
+        <div class="card-title-tags" data-slot="tags"></div>
+      </div>
+
+      <div class="card-top-actions">
+        
+        <div class="card-top-link" data-slot="link"></div>
+      </div>
+    
+    
+    </div>
+    <div class="card-progress" data-slot="progress">
+      <div class="card-progress-label" data-slot="progress-label"></div>
+      <div class="card-progress-bar" data-slot="progress-bar"></div>
+    </div>
+    <div class="card-bottom">
+      <div data-slot="assignee"></div>
+      <div class="card-deadline" data-slot="deadline"></div>
+    </div>
+  </div>
+</template>
+
+<!-- Board column template -->
+<template id="column-template">
+  <div class="column">
+    <div class="col-header">
+      <div class="col-left">
+        <div class="col-indicator" data-slot="indicator"></div>
+        <span class="col-name" data-slot="name"></span>
+        <span class="col-count" data-slot="count"></span>
+      </div>
+      <button class="col-add admin-only" data-slot="add">+</button>
+    </div>
+    <div class="cards-list" data-slot="cards">
+      <div class="col-empty" data-slot="empty">Нет задач</div>
+    </div>
+  </div>
+</template>
+
+<!-- Small parts of a card -->
+<template id="card-tag-template">
+  <span class="card-tag"></span>
+</template>
+
+<template id="card-code-template">
+  <div class="card-code"></div>
+</template>
+
+<template id="card-tag-hot-template">
+  <div class="cart-tag-hot">Priority</div>
+</template>
+
+<template id="card-link-share-template">
+  <div class="card-top-share-link" data-share-link=""> 
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 preview-icon"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+  </div>
+</template>
+
+<template id="card-link-template">
+  <a href="" target="_blank" class="card-top-link">
+    <svg width="24" height="24" aria-hidden="true"><use href="#icon-link"/></svg>
+  </a>
+</template>
+
+<template id="card-progress-seg-template">
+  <div class="card-progress-fill"></div>
+</template>
+
+<template id="card-assignee-none-template">
+  <div class="card-assignee-none">—</div>
+</template>
+
+<template id="card-assignee-one-template">
+  <div class="card-assignee-info">
+    <a class="card-assignee-name" target="_blank" data-slot="name"></a>
+    <div class="card-assignee-role" data-slot="role"></div>
+  </div>
+</template>
+
+<template id="card-assignee-many-template">
+  <div class="card-assignee-info">
+    <div class="card-assignee-name" data-slot="count"></div>
+    <div class="card-assignee-role" data-slot="names"></div>
+  </div>
+</template>
+
+<!-- Member avatar: an image instead of the letter -->
+<template id="avatar-img-template">
+  <img src="" alt="">
+</template>
+
+<!-- Subtask row in the card modal -->
+<template id="subtask-template">
+  <div class="subtask-item">
+    <span class="subtask-grip" data-slot="grip" title="Перетащи, чтобы изменить порядок" aria-hidden="true">
+      <svg width="10" height="16"><use href="#icon-grip"/></svg>
+    </span>
+    <input type="checkbox" class="subtask-check" data-slot="check">
+    <span class="subtask-text" data-slot="text" title="Двойной клик — редактировать"></span>
+    <input type="text" class="subtask-edit" data-slot="edit" hidden>
+    <button type="button" class="subtask-del" data-slot="del">✕</button>
+  </div>
+</template>
+
+<!-- A selected assignee and a dropdown option -->
+<template id="assignee-row-template">
+  <div class="assignee-row">
+    <div class="assignee-row-avatar" data-slot="avatar"></div>
+    <div class="assignee-row-text">
+      <div class="assignee-row-name" data-slot="name"></div>
+      <div class="assignee-row-role" data-slot="role"></div>
+    </div>
+    <button type="button" class="assignee-row-del" data-slot="del" title="Убрать">✕</button>
+  </div>
+</template>
+
+<template id="assignee-option-template">
+  <div class="assignee-option">
+    <div class="assignee-option-avatar" data-slot="avatar"></div>
+    <div class="assignee-option-info">
+      <div class="assignee-option-name" data-slot="name"></div>
+      <div class="assignee-option-role" data-slot="role"></div>
+    </div>
+  </div>
+</template>
+
+<!-- Team member -->
+<template id="team-member-template">
+  <div class="team-member admin-only">
+    <div class="team-avatar" data-slot="avatar"></div>
+    <div class="team-info">
+      <a class="team-name" target="_blank" data-slot="name"></a>
+      <div class="team-role" data-slot="role"></div>
+    </div>
+    <div class="task-to" data-slot="tasks">
+      <span><svg width="8" height="8" aria-hidden="true"><use href="#icon-tasks"/></svg></span>
+      <span data-slot="tasks-count"></span>
+    </div>
+    <div class="status-user" data-slot="no-tasks">Нет задач</div>
+    <div class="team-done" data-slot="done"></div>
+    <button type="button" class="team-del" data-slot="del">✕</button>
+  </div>
+</template>
+
+<template id="team-empty-template">
+  <div class="team-empty">Команда пуста</div>
+</template>
+
+<!-- HELP FAB -->
+<button class="help-fab" id="help-fab" title="Помощь">?</button>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ MODAL: ADD/EDIT CARD ══ -->
+<div class="overlay" id="card-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="card-modal-title">Новая задача</h3>
+      <button class="modal-close" data-close="card-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Заголовок</label>
+        <input type="text" class="admin-only" id="f-title" placeholder="Название задачи">
+      </div>
+      <div class="field field-l1">
+        <label>Ссылка на макет</label>
+        <div class="field-link-row">
+          <input type="url" class="admin-only" id="f-link" placeholder="https://figma.com/...  (необязательно)">
+          <button type="button" class="link-copy-btn" id="f-link-copy" title="Скопировать ссылку на макет">
+            <svg width="24" height="24" aria-hidden="true"><use href="#icon-link"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Тип задачи</label>
+          <select class="admin-only" id="f-type">
+            <option value="">— не выбрано —</option>
+            <option value="design">Дизайн</option>
+            <option value="dev">Разработка</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Колонка</label>
+          <select class="admin-only" id="f-col">
+            <option value="todo">To Do</option>
+            <option value="doing">Doing</option>
+            <option value="review">Review</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Описание</label>
+        <textarea class="admin-only" id="f-desc" placeholder="Детали, контекст, ссылки…"></textarea>
+      </div>
+      <div class="field">
+        <label>Подзадачи</label>
+        <div class="subtasks-list admin-only" id="subtasks-list"></div>
+        <div class="add-subtask-row admin-only">
+          <input type="text" class="add-subtask-input" id="subtask-input" placeholder="Добавить подзадачу…">
+          <button class="btn btn-ghost btn-sm" id="subtask-add-btn">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.2002 0.100586C6.51431 0.100586 6.76855 0.354826 6.76855 0.668945V5.63184H11.7314C12.0456 5.63184 12.2998 5.88608 12.2998 6.2002C12.2998 6.51431 12.0456 6.76855 11.7314 6.76855H6.76855V11.7314C6.76855 12.0456 6.51431 12.2998 6.2002 12.2998C5.88608 12.2998 5.63184 12.0456 5.63184 11.7314V6.76855H0.668945C0.354826 6.76855 0.100586 6.51431 0.100586 6.2002C0.100586 5.88608 0.354826 5.63184 0.668945 5.63184H5.63184V0.668945C5.63184 0.354826 5.88608 0.100586 6.2002 0.100586Z" fill="#DBDBDB" stroke="#DBDBDB" stroke-width="0.2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Исполнители</label>
+        <div class="assignee-list admin-only" id="assignee-list"></div>
+        <button type="button" class="assignee-add-btn admin-only" id="assignee-add-btn">+ Добавить исполнителя</button>
+        <div class="assignee-dropdown" id="assignee-dropdown"></div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Дедлайн</label>
+          <span class="field-data">
+            <input type="date" class="admin-only" id="f-deadline">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.6757 5.42875C17.5769 3.78656 16.2057 2.5 14.5541 2.5H13.7501V1.875C13.7501 1.53 13.4701 1.25 13.1251 1.25C12.7801 1.25 12.5001 1.53 12.5001 1.875V2.5H7.50007V1.875C7.50007 1.53 7.22007 1.25 6.87507 1.25C6.53007 1.25 6.25007 1.53 6.25007 1.875V2.5H5.446C3.79413 2.5 2.42288 3.78656 2.32444 5.42875C2.13913 8.5175 2.14257 11.6506 2.33475 14.7409C2.43225 16.3103 3.68944 17.5675 5.25882 17.665C6.83163 17.7628 8.41569 17.8116 9.99975 17.8116C11.5835 17.8116 13.1679 17.7628 14.7407 17.665C16.3101 17.5675 17.5673 16.3103 17.6648 14.7409C17.8573 11.6522 17.8607 8.51937 17.6757 5.42875ZM16.4176 14.6634C16.3588 15.605 15.6048 16.3591 14.6635 16.4175C11.5691 16.6097 8.431 16.6097 5.33663 16.4175C4.39507 16.3587 3.641 15.6047 3.58257 14.6634C3.43475 12.2875 3.40444 9.88656 3.4835 7.5H16.5169C16.5957 9.8875 16.5654 12.2884 16.4176 14.6634ZM6.87507 5C7.22007 5 7.50007 4.72 7.50007 4.375V3.75H12.5001V4.375C12.5001 4.72 12.7801 5 13.1251 5C13.4701 5 13.7501 4.72 13.7501 4.375V3.75H14.5541C15.5457 3.75 16.3688 4.52031 16.4279 5.50344C16.4426 5.75156 16.4488 6.00125 16.461 6.25H3.53913C3.55163 6.00125 3.55757 5.75156 3.57225 5.50344C3.63132 4.52031 4.45413 3.75 5.446 3.75H6.25007V4.375C6.25007 4.72 6.53007 5 6.87507 5Z" fill="#9B94AF"/>
+              <path d="M6.875 11.25C7.39277 11.25 7.8125 10.8303 7.8125 10.3125C7.8125 9.79473 7.39277 9.375 6.875 9.375C6.35723 9.375 5.9375 9.79473 5.9375 10.3125C5.9375 10.8303 6.35723 11.25 6.875 11.25Z" fill="#9B94AF"/>
+              <path d="M10 11.25C10.5178 11.25 10.9375 10.8303 10.9375 10.3125C10.9375 9.79473 10.5178 9.375 10 9.375C9.48223 9.375 9.0625 9.79473 9.0625 10.3125C9.0625 10.8303 9.48223 11.25 10 11.25Z" fill="#9B94AF"/>
+              <path d="M6.875 14.375C7.39277 14.375 7.8125 13.9553 7.8125 13.4375C7.8125 12.9197 7.39277 12.5 6.875 12.5C6.35723 12.5 5.9375 12.9197 5.9375 13.4375C5.9375 13.9553 6.35723 14.375 6.875 14.375Z" fill="#9B94AF"/>
+              <path d="M13.125 11.25C13.6428 11.25 14.0625 10.8303 14.0625 10.3125C14.0625 9.79473 13.6428 9.375 13.125 9.375C12.6072 9.375 12.1875 9.79473 12.1875 10.3125C12.1875 10.8303 12.6072 11.25 13.125 11.25Z" fill="#9B94AF"/>
+              <path d="M13.125 14.375C13.6428 14.375 14.0625 13.9553 14.0625 13.4375C14.0625 12.9197 13.6428 12.5 13.125 12.5C12.6072 12.5 12.1875 12.9197 12.1875 13.4375C12.1875 13.9553 12.6072 14.375 13.125 14.375Z" fill="#9B94AF"/>
+              <path d="M10 14.375C10.5178 14.375 10.9375 13.9553 10.9375 13.4375C10.9375 12.9197 10.5178 12.5 10 12.5C9.48223 12.5 9.0625 12.9197 9.0625 13.4375C9.0625 13.9553 9.48223 14.375 10 14.375Z" fill="#9B94AF"/>
+            </svg>
+          </span>
+
+        </div>
+        <div class="field field-hot">
+          <label for="f-hot"><div>Приоритет</div>
+          <input type="checkbox" class="admin-only" id="f-hot">
+          <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div id="card-conflict" style="display:none;flex-shrink:0;padding:12px 20px;border-top:1px solid rgba(248,113,113,.25);background:var(--danger-bg)">
+      <div id="card-conflict-text" style="font-size:12px;color:var(--danger);line-height:1.5"></div>
+      <button class="btn btn-ghost btn-sm" id="card-reload-btn" style="margin-top:8px">Обновить</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger-soft" id="delete-card-btn" style="display:none;margin-right:auto">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15.8335 5.8335C15.6125 5.8335 15.4005 5.92129 15.2442 6.07757C15.088 6.23385 15.0002 6.44582 15.0002 6.66683V15.9927C14.9763 16.4141 14.7868 16.809 14.4731 17.0913C14.1593 17.3737 13.7467 17.5206 13.3252 17.5002H6.67516C6.25358 17.5206 5.84098 17.3737 5.52725 17.0913C5.21352 16.809 5.02407 16.4141 5.00016 15.9927V6.66683C5.00016 6.44582 4.91237 6.23385 4.75608 6.07757C4.5998 5.92129 4.38784 5.8335 4.16683 5.8335C3.94582 5.8335 3.73385 5.92129 3.57757 6.07757C3.42129 6.23385 3.3335 6.44582 3.3335 6.66683V15.9927C3.35728 16.8562 3.72231 17.6751 4.34865 18.27C4.97498 18.865 5.81156 19.1874 6.67516 19.1668H13.3252C14.1888 19.1874 15.0253 18.865 15.6517 18.27C16.278 17.6751 16.643 16.8562 16.6668 15.9927V6.66683C16.6668 6.44582 16.579 6.23385 16.4228 6.07757C16.2665 5.92129 16.0545 5.8335 15.8335 5.8335Z" fill="#9B94AF"/>
+          <path d="M16.6667 3.3335H13.3333V1.66683C13.3333 1.44582 13.2455 1.23385 13.0893 1.07757C12.933 0.921293 12.721 0.833496 12.5 0.833496H7.5C7.27899 0.833496 7.06702 0.921293 6.91074 1.07757C6.75446 1.23385 6.66667 1.44582 6.66667 1.66683V3.3335H3.33333C3.11232 3.3335 2.90036 3.42129 2.74408 3.57757C2.5878 3.73385 2.5 3.94582 2.5 4.16683C2.5 4.38784 2.5878 4.5998 2.74408 4.75608C2.90036 4.91237 3.11232 5.00016 3.33333 5.00016H16.6667C16.8877 5.00016 17.0996 4.91237 17.2559 4.75608C17.4122 4.5998 17.5 4.38784 17.5 4.16683C17.5 3.94582 17.4122 3.73385 17.2559 3.57757C17.0996 3.42129 16.8877 3.3335 16.6667 3.3335ZM8.33333 3.3335V2.50016H11.6667V3.3335H8.33333Z" fill="#9B94AF"/>
+          <path d="M9.16667 14.1667V8.33333C9.16667 8.11232 9.07887 7.90036 8.92259 7.74408C8.76631 7.5878 8.55435 7.5 8.33333 7.5C8.11232 7.5 7.90036 7.5878 7.74408 7.74408C7.5878 7.90036 7.5 8.11232 7.5 8.33333V14.1667C7.5 14.3877 7.5878 14.5996 7.74408 14.7559C7.90036 14.9122 8.11232 15 8.33333 15C8.55435 15 8.76631 14.9122 8.92259 14.7559C9.07887 14.5996 9.16667 14.3877 9.16667 14.1667Z" fill="#9B94AF"/>
+          <path d="M12.5002 14.1667V8.33333C12.5002 8.11232 12.4124 7.90036 12.2561 7.74408C12.0998 7.5878 11.8878 7.5 11.6668 7.5C11.4458 7.5 11.2339 7.5878 11.0776 7.74408C10.9213 7.90036 10.8335 8.11232 10.8335 8.33333V14.1667C10.8335 14.3877 10.9213 14.5996 11.0776 14.7559C11.2339 14.9122 11.4458 15 11.6668 15C11.8878 15 12.0998 14.9122 12.2561 14.7559C12.4124 14.5996 12.5002 14.3877 12.5002 14.1667Z" fill="#9B94AF"/>
+        </svg>
+      </button>
+      <button class="btn btn-ghost" data-close="card-overlay">Отмена</button>
+      <button class="btn btn-primary admin-only" id="save-card-btn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: TEAM ══ -->
+<div class="overlay" id="team-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Команда</h3>
+      <button class="modal-close" data-close="team-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="team-list" id="team-list"></div>
+      <button class="btn btn-ghost bnt-activ" id="add-member-btn" style="width:100%;justify-content:center;margin-top:8px">+ Добавить участника</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADD MEMBER ══ -->
+<div class="overlay" id="add-member-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="add-member-title">Новый участник</h3>
+      <button class="modal-close" data-close="add-member-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Имя</label><input type="text" id="m-name" placeholder="Иван Петров"></div>
+      <div class="field"><label>Ссылка на Telegram</label><input type="url" id="m-tg" placeholder="https://t.me/username"></div>
+      <div class="field">
+        <label>Роль</label>
+        <select id="m-role">
+          <option value="UX/UI Designer">UX/UI Designer</option>
+          <option value="Dev">Dev</option>
+          <option value="PM">ПМ</option>
+        </select>
+      </div>
+      <div class="field"><label>Аватарка (URL)</label><input type="url" id="m-avatar" placeholder="https://... (необязательно)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="add-member-overlay">Отмена</button>
+      <button class="btn btn-primary" id="save-member-btn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ MODAL: SETTINGS (for signed-in users) ══ -->
+<div class="overlay" id="github-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="login-modal-title">Вход в Gamefy</h3>
+      <button class="modal-close" data-close="github-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="login-welcome" style="background:var(--secondary);border:1px solid var(--outline);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;color:var(--text-secondary);line-height:1.6">
+        Первый вход — введи любой пароль, ты станешь администратором.<br>Пароль сохранится в браузере — больше вводить не нужно.
+      </div>
+      <div id="login-role-info" style="display:none;font-size:14px;color:var(--text-secondary);line-height:1.6">
+        Текущая роль: 
+          <span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g clip-path="url(#clip0_270_11240)">
+            <path d="M8.69258 13.3903C8.64609 13.3629 8.59688 13.3356 8.55039 13.3082L8.26328 13.4313C7.7 13.6719 7.04648 13.4532 6.74023 12.9227L6.24805 12.0696C5.9418 11.5391 6.08125 10.8637 6.5707 10.4946L6.81953 10.3086C6.81953 10.2813 6.81953 10.2539 6.81953 10.2266C6.81953 10.1993 6.81953 10.1719 6.81953 10.1446L6.5707 9.95863C6.08125 9.58949 5.94453 8.9141 6.24805 8.38363L6.74023 7.5305C6.88789 7.27621 7.12031 7.0848 7.39648 6.99183C6.71562 6.68011 5.97461 6.51878 5.22539 6.52152C2.34063 6.51878 0 8.85941 0 11.7442V13.259C0 13.6692 0.330859 14 0.741016 14H8.80469C8.76641 13.9043 8.7418 13.8032 8.72813 13.6993L8.69258 13.3903Z" fill="#9F82FF"/>
+            <path d="M5.22578 5.73672C6.80993 5.73672 8.09414 4.45251 8.09414 2.86836C8.09414 1.28421 6.80993 0 5.22578 0C3.64163 0 2.35742 1.28421 2.35742 2.86836C2.35742 4.45251 3.64163 5.73672 5.22578 5.73672Z" fill="#9F82FF"/>
+            <path d="M13.8223 11.1072L13.2344 10.667C13.2809 10.3771 13.2809 10.0791 13.2344 9.78926L13.8223 9.34902C14.0027 9.21504 14.0519 8.96621 13.9398 8.76934L13.4476 7.91621C13.3355 7.72207 13.0949 7.64004 12.8871 7.73027L12.2117 8.01738C11.982 7.83145 11.725 7.68379 11.4516 7.57715L11.3641 6.84707C11.3367 6.62285 11.148 6.45605 10.9211 6.45605H9.93398C9.70976 6.45605 9.51835 6.62559 9.49101 6.84707L9.40351 7.57715C9.12734 7.68379 8.87304 7.83145 8.64335 8.01738L7.96796 7.73027C7.76015 7.64277 7.51952 7.72207 7.40741 7.91621L6.91523 8.76934C6.80312 8.96348 6.85234 9.2123 7.0328 9.34902L7.6207 9.78926C7.57421 10.0791 7.57421 10.3771 7.6207 10.667L7.0328 11.1072C6.85234 11.2439 6.80312 11.4928 6.91523 11.6869L7.40741 12.54C7.51952 12.7342 7.76015 12.8162 7.96796 12.7287L8.64335 12.4389C8.87304 12.6248 9.13007 12.7725 9.40351 12.8791L9.49101 13.6092C9.51835 13.8334 9.70702 14.0002 9.93398 14.0002H10.9211C11.1453 14.0002 11.3367 13.8307 11.3641 13.6092L11.4516 12.8791C11.725 12.7725 11.982 12.6248 12.2117 12.4389L12.8871 12.726C13.0949 12.8135 13.3355 12.7342 13.4476 12.5373L13.9398 11.6842C14.0519 11.4928 14.0027 11.2439 13.8223 11.1072ZM10.4262 11.2932C9.83827 11.2932 9.35976 10.8146 9.35976 10.2268C9.35976 9.63887 9.83827 9.16035 10.4262 9.16035C11.0141 9.16035 11.4926 9.63887 11.4926 10.2268C11.4926 10.8146 11.0141 11.2932 10.4262 11.2932Z" fill="#9F82FF"/>
+            </g>
+            <defs>
+            <clipPath id="clip0_270_11240">
+            <rect width="14" height="14" fill="white"/>
+            </clipPath>
+            </defs>
+          </svg></span> <strong id="current-role-label" style="color:var(--text-accent)">—</strong>
+      </div>
+      <div class="field">
+        <label id="pass-label">Пароль доступа</label>
+        <input type="password" id="gh-token-input" placeholder="Введи пароль…">
+      </div>
+      <div style="font-size:10px;color:var(--text-secondary);line-height:1.5;margin-top:-4px">
+        Первый кто войдёт — становится администратором.<br>
+        Остальным выдай другой пароль через настройки.
+      </div>
+      <div id="gh-error" style="display:none;font-size:12px;color:var(--danger);background:var(--danger-bg);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);padding:8px 12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger-soft btn-sm btn-error" id="gh-disconnect-btn" style="display:none;margin-right:auto">Выйти</button>
+      <button class="btn btn-ghost" data-close="github-overlay" id="login-cancel-btn" style="display:none">Отмена</button>
+      <button class="btn btn-primary" id="gh-save-btn">Войти</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: CONFIRM ══ -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="confirm-title">Подтверждение</h3>
+      <button class="modal-close" data-close="confirm-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="confirm-text" id="confirm-text"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="confirm-overlay">Отмена</button>
+      <button class="btn btn-danger-soft" id="confirm-ok-btn">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: HELP ══ -->
+<div class="overlay" id="help-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Как работать с доской</h3>
+      <button class="modal-close" data-close="help-overlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="help-step">
+        <div class="help-step-num">0</div>
+        <div class="help-step-text">
+          <iframe src="https://www.youtube.com/embed/nH6fd8mOVWQ?si=9D8yjbGjj-dXpQdb" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-text"><strong>To Do</strong> — новые задачи. Нажмите <strong>+ Задача</strong> или «+» в колонке, чтобы создать.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-text"><strong>Doing</strong> — задача взята в работу. Перетащите карточку или откройте и смените колонку.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-text"><strong>Review</strong> — задача готова, ждёт проверки командой или заказчиком.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">4</div>
+        <div class="help-step-text"><strong>Done</strong> — задача принята. Счётчик «выполнено» обновится автоматически.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">✦</div>
+        <div class="help-step-text">Карточки можно <strong>перетаскивать</strong> между колонками. Красный дедлайн — срок прошёл.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js?v=2"></script>
+</body>
+</html>
