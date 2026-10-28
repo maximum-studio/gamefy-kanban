@@ -71,15 +71,11 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text-primar
 }
 .header-left{display:flex;align-items:center;gap:14px;flex-shrink:0}
 .logo-slot{
-  width:38px;height:38px;
-  border:2px dashed var(--default);
-  border-radius:var(--r-sm);
-  display:flex;align-items:center;justify-content:center;
-  color:var(--text-primary);font-size:10px;text-align:center;line-height:1.2;
-  cursor:pointer;transition:border-color .2s;
-  flex-shrink:0;
+width:38px;height:38px;
+display:flex;align-items:center;justify-content:center;
+flex-shrink:0;
 }
-.logo-slot:hover{border-color:var(--accent)}
+.logo-slot img{width:100%;height:100%;object-fit:contain;display:block}
 .header-title{font-size:var(--h3-size);font-weight:var(--h3-weight);letter-spacing:-0.3px;white-space:nowrap}
 .header-title span{color:var(--accent)}
 
